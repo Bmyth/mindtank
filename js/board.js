@@ -23,7 +23,6 @@ function _board_update(val) {
 			var prevspan = Board.ele.find('span').last();
 			if(prevspan.length > 0){
 				prevUid = prevspan.attr('uid');
-				console.log(prevUid)
 			}else{
 				prevUid = Nodes.path.length > 0 ? Nodes.path[Nodes.path.length - 1].uid : '';
 			}

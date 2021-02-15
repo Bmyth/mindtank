@@ -26,16 +26,6 @@ function Node(params){
 	    uiFrame.bringToFront();
 	    uiFrame.name = 'frame';
 	    node.uiGroup.addChild(uiFrame);
-
-	    node.phyObj = Physic.addObj({
-			x: x,
-			y: y,
-			w: rect.width,
-			h: rect.height,
-			isStatic: true,
-			mass: 10,
-			frictionAir: 1
-		});
 		// console.log(node.phyObj)
 	}
 
@@ -53,20 +43,26 @@ function Node(params){
 		link.sendToBack();
 	}
 
+	var prevObj = node.prevNode ? node.prevNode.phyObj : null;
+
+	node.phyObj = Physic.addObj({
+		x: x,
+		y: y,
+		w: rect.width,
+		h: rect.height,
+		isStatic: true,
+		frictionAir: 0.05
+	});
+	node.phyObj.mass = 10;
+
 	node.onFrame = _node_onFrame;
 	node.release = _node_release;
 	node.updateBoardElePos = _node_updateBoardElePos;
+	node.float = _node_float;
 	return node;
 }
 
 function _node_onFrame(i) {
-	if(!this.phyObj.isStatic){
-		// var x =  0.001 * Math.random() - 0.0005;
-		// var y = 0.001 * Math.random() - 0.001;
-		var x = 0;
-		var y = 0;
-		Physic.applyForce(this.phyObj, {x:x, y:y})
-	}
 	if(this.posX !=  this.phyObj.position.x || this.posY != this.phyObj.position.y){
 		var uiFrame = this.uiGroup.children['frame'];
 		var rect = this.ele[0].getBoundingClientRect();
@@ -107,6 +103,12 @@ function _node_updateBoardElePos(boardEle){
 	var rect = boardEle[0].getBoundingClientRect();
 	this.phyObj.position.x = rect.left + rect.width * 0.5;
 	this.phyObj.position.y =  rect.top + rect.height * 0.5;
+}
+
+function _node_float() {
+	var x =  0.01 * Math.random() - 0.005;
+	var y = 0.01 * Math.random() - 0.005;
+	Physic.applyForce(this.phyObj, {x:x, y:y})
 }
 
 function generateUid(){

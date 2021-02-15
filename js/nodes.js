@@ -22,7 +22,15 @@ function _nodes_init() {
 }
 
 function _nodes_onFrame(i) {
-	
+	if(i.count % 50 == 0){
+		Nodes.path.forEach(function(n){
+			if(!n.onBoard){
+				if(Math.random() > 0.5){
+					n.float();
+				}
+			}
+		})
+	}
 }
 
 function _nodes_addNode(ele) {
@@ -37,12 +45,15 @@ function _nodes_releaseNodes() {
 	Nodes.path.forEach(function(n){
 		if(n.onBoard){
 			n.release();
+			console.log(n.phyObj)
 		}
 	})
 }
 
 function _nodes_updateBoardNodes() {
+
 	if(this.boardTop != Board.ele.css('top')){
+			console.log('uuuuu')
 		this.boardTop = Board.ele.css('top');
 		Nodes.path.forEach(function(n){
 			if(n.onBoard){

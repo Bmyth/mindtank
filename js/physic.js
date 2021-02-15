@@ -22,12 +22,16 @@ function _phy_init(){
     this.world = this.engine.world;
     this.world.gravity.y = 0;
     this.Bodies = Matter.Bodies;
+    this.Body = Matter.Body;
+    this.Composite = Matter.Composite;
+    this.Composites = Matter.Composites;
+    this.Constraint = Matter.Constraint;
 
 	this.Engine.run(this.engine);
 }
 
 function _phy_setStatic(obj, isStatic) {
-	Matter.Body.setStatic(obj, isStatic);
+	this.Body.setStatic(obj, isStatic);
 }
 
 function _phy_addLiquidChain(liquid){
@@ -64,12 +68,23 @@ function _phy_addLiquidChain(liquid){
     this.World.add(this.world, [liquidNodes, c1, c2]);
 }
 
-function _phy_addObj(params){
+function _phy_addObj(params, prevObj){
 	var rect = this.Bodies.rectangle(params.x, params.y, params.w, params.h, params);
 	rect.idx = params.idx;
-	// rect.keep = params.keep;
-	this.objects.push(rect);
-	this.World.add(this.engine.world, [rect]);
+	if(prevObj){
+		var c = Matter.Constraint.create({
+	       pointA:rect.position,
+	       bodyB:prevObj,
+	       pointB:prevObj.position,
+	       // length: 50,
+	       // stiffness: 0.8
+	    });
+	    this.World.add(this.world, [rect,c]);
+	}else{
+		this.World.add(this.world, [rect]);
+	}
+	
+	
 	return rect;
 }
 
