@@ -1,0 +1,22 @@
+.w100 {width: 100%;}
+.h100 {height: 100%;}
+.z10{z-index: 10;}
+.z20{z-index: 20;}
+.z30{z-index: 30;}
+
+.bg-white {background: white;}
+.board {width: calc(50% - 20px); height: auto; top: 25%; left: 25%; border: 1px solid #666; padding: 10px;}
+.board span{font-weight: bold;}
+
+.font-ss{font-family: sans-serif;}
+.space-break{white-space: break-spaces;}
+
+.relative {position: relative;}
+.absolute {position: absolute;}
+.oh {overflow: hidden;}
+.opacity0 {opacity: 0;}
+.hide {display: none;}
+.hideFromScreen {position: absolute; left: -9999px; top: -9999px;}
+
+#nodecontainer .node{display: inline; position: absolute;font-size: 10px;}
+
