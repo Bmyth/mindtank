@@ -28,6 +28,12 @@ function _phy_init(){
     this.Constraint = Matter.Constraint;
 
 	this.Engine.run(this.engine);
+
+	var l1 = this.Bodies.rectangle(windowWidth * 0.5, 0, windowWidth, 1, {isStatic: true});
+	var l2 = this.Bodies.rectangle(0, windowHeight * 0.5, 1, windowHeight, {isStatic: true});
+	var l3 = this.Bodies.rectangle(windowWidth, windowHeight * 0.5, 1, windowHeight, {isStatic: true});
+	var l4 = this.Bodies.rectangle(windowWidth * 0.5, windowHeight, windowWidth, 1, {isStatic: true});
+	this.World.add(this.world, [l1,l2,l3,l4]);
 }
 
 function _phy_setStatic(obj, isStatic) {
@@ -70,18 +76,17 @@ function _phy_addLiquidChain(liquid){
 
 function _phy_addObj(params, prevObj){
 	var rect = this.Bodies.rectangle(params.x, params.y, params.w, params.h, params);
-	rect.idx = params.idx;
+	this.World.add(this.world, [rect]);
 	if(prevObj){
 		var c = Matter.Constraint.create({
-	       pointA:rect.position,
-	       bodyB:prevObj,
-	       pointB:prevObj.position,
-	       // length: 50,
-	       // stiffness: 0.8
+			bodyA: rect,
+	       	// pointA:rect.position,
+	       	bodyB:prevObj,
+	       	// pointB:prevObj.position,
+	       length: 50,
+	       stiffness: 0.8
 	    });
-	    this.World.add(this.world, [rect,c]);
-	}else{
-		this.World.add(this.world, [rect]);
+	    this.World.add(this.world, [c]);
 	}
 	
 	

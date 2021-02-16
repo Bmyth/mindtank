@@ -32,10 +32,14 @@ function _board_update(val) {
 			span.attr('prevuid',prevUid)
 		}else{
 			var span = Board.ele.find('span').last();
+			var prevText = [];
+			if(span.attr('prevuid')){
+				prevText.push(Board.ele.find('[uid=' + span.attr('prevuid') + ']').text());
+			}
 			var t = span.text().replace('@','');
 			t = t.substring(0, t.length - 1);
 			span.text(t)
-			Nodes.addNode(span);
+			Nodes.addNode(span, prevText);
 			Board.onEditNode = false;
 		}
 		html = Board.ele.html();

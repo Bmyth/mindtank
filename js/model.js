@@ -6,7 +6,11 @@ var Model = {
 }
 
 function _model_init() {
-	
+	var nodes = localStorage.getItem('nodelist');
+	if(nodes){
+		nodes = JSON.parse(nodes);
+	}
+	Model.nodes = nodes || [];
 }
 
 function _model_add(text, linkTexts) {

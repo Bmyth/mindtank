@@ -14,9 +14,8 @@
 .relative {position: relative;}
 .absolute {position: absolute;}
 .oh {overflow: hidden;}
-.opacity0 {opacity: 0;}
 .hide {display: none;}
 .hideFromScreen {position: absolute; left: -9999px; top: -9999px;}
 
 #nodecontainer .node{display: inline; position: absolute;font-size: 10px;}
-
+#board .nodeholder {opacity: 0;}

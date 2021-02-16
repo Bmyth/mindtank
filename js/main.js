@@ -13,6 +13,7 @@ $(function() {
     FrontPaper.setup($("#paper")[0]);
     FrontPaper.install(window);
     
+    Model.init();
     Physic.init();
     Entry.init();
     Board.init();
