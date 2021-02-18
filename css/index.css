@@ -5,8 +5,7 @@
 .z30{z-index: 30;}
 
 .bg-white {background: white;}
-.board {width: calc(50% - 20px); height: auto; top: 25%; left: 25%; border: 1px solid #666; padding: 10px;}
-.board span{font-weight: bold;}
+
 
 .font-ss{font-family: sans-serif;}
 .space-break{white-space: break-spaces;}
@@ -17,5 +16,7 @@
 .hide {display: none;}
 .hideFromScreen {position: absolute; left: -9999px; top: -9999px;}
 
-#nodecontainer .node{display: inline; position: absolute;font-size: 10px;}
-#board .nodeholder {opacity: 0;}
+#nodecontainer .node{display: block; position: absolute; background: #aaa; width: 3px; height: 3px; padding:0; border-radius: 100%;}
+.board {width: calc(50% - 20px); height: auto; top: 25%; left: 25%; border: 1px solid #666; padding: 10px; background: rgba(255,255,255,0.6); font-size: 14px;}
+#board .nodeholder {opacity: 1;}
+#nodecontainer .node.onpath, .board span{display: inline-block; width: auto; height: auto;font-size: 14px;font-weight: bold; color: darkblue; opacity: 1; background: none;}

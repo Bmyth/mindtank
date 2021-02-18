@@ -1,11 +1,5 @@
 var Physic ={
 	init: _phy_init,
-	Engine: null,
-	engine: null,
-	World: null,
-	world: null,
-	Bodies: null,
-	addLiquidChain: _phy_addLiquidChain,
 	addObj: _phy_addObj,
 	setStatic: _phy_setStatic,
 	getObjectByIdx: _phy_getObjectByIdx,
@@ -40,51 +34,15 @@ function _phy_setStatic(obj, isStatic) {
 	this.Body.setStatic(obj, isStatic);
 }
 
-function _phy_addLiquidChain(liquid){
-	var liquidTop = liquid.top;
-	var liquidWidth = liquid.width;
-
-	var liquidNodeNum = liquid.amount;
-	var liquidNodeWidth = 4;
-	var gap = (liquidWidth - liquidNodeNum * liquidNodeWidth * 2) / (liquidNodeNum - 1);
-    var liquidNodes = Matter.Composites.stack(liquidNodeWidth * 0.5, liquidTop, 10, 1, gap, 0, function(x, y) {
-        var n = Matter.Bodies.circle(x,y,liquidNodeWidth);
-        n.mass = 0.5;
-        return n;
-    });
-    liquidNodes.idx = 'liquidNodes';
-	liquidNodes.keep = true;
-	this.objects.push(liquidNodes);
-    
-    Matter.Composites.chain(liquidNodes, 0.5, 0, -0.5, 0, { stiffness: 0.5, length: 5});
-
-    var c1 = Matter.Constraint.create({
-       // bodyA:Physic.getObjectByIdx('leftWall'),
-       pointA:{x:0,y:liquidTop},
-       bodyB:liquidNodes.bodies[0],
-       pointB:{x:-5,y:0},
-       stiffness: 0.8
-    });
-    var c2 = Matter.Constraint.create({
-       pointA:{x:liquidWidth,y:liquidTop},
-       bodyB:liquidNodes.bodies[liquidNodeNum-1],
-       pointB:{x:5,y:0},
-       stiffness: 0.8
-    });
-    this.World.add(this.world, [liquidNodes, c1, c2]);
-}
-
 function _phy_addObj(params, prevObj){
 	var rect = this.Bodies.rectangle(params.x, params.y, params.w, params.h, params);
 	this.World.add(this.world, [rect]);
 	if(prevObj){
 		var c = Matter.Constraint.create({
 			bodyA: rect,
-	       	// pointA:rect.position,
 	       	bodyB:prevObj,
-	       	// pointB:prevObj.position,
-	       length: 50,
-	       stiffness: 0.8
+	       length: 100,
+	       stiffness: 0.7
 	    });
 	    this.World.add(this.world, [c]);
 	}

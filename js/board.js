@@ -3,7 +3,7 @@ var Board = {
 	update: _board_update,
 	release: _board_release,
 	close: _board_close,
-	getMapPos: _board_getMapPos,
+	getNodeEle: _board_getNodeEle,
 	onEditNode: false,
 	ele: null
 }
@@ -61,14 +61,23 @@ function _board_update(val) {
     	Board.ele.fadeIn()
     }
 
-    Board.ele.css('top', (windowHeight - Board.ele.height()) * 0.5);
+    _board_updateTop();
     Nodes.updateBoardNodes();
 }
 
 function _board_release() {
-	Nodes.releaseNodes();
+	var span = Board.ele.find('span').last().clone();
 	Board.ele.empty();
-	Board.ele.fadeOut();
+	Entry.ele.val('');
+	span.appendTo(Board.ele)
+	Nodes.releaseNodes();
+	_board_updateTop();
+	Nodes.updateBoardNodes();
+}
+
+
+function _board_updateTop() {
+	Board.ele.css('top', (windowHeight - Board.ele.height()) * 0.5);
 }
 
 function _board_close() {
@@ -76,13 +85,22 @@ function _board_close() {
 	Board.ele.fadeOut();
 }
 
-function _board_getMapPos(point) {
-	var w = Board.ele.width();
-	var h = Board.ele.height();
-	var marginLeft = (windowWidth - w) * 0.5;
-	var marginTop = (windowHeight - h) * 0.5;
-	var mapRectSize  = 100;
-	var x = (marginLeft - mapRectSize) + (point.x - marginLeft) / w * mapRectSize;
-	var y = (marginTop - mapRectSize) + (point.y - marginTop) / h * mapRectSize;
-	return {x:x, y:y}
+function _board_getNodeEle(uid) {
+	var ele = Board.ele.find('[uid=' + uid + ']');
+	if(ele.length == 0){
+		return null;
+	}else{
+		return ele;
+	}
 }
+
+// function _board_getMapPos(point) {
+// 	var w = Board.ele.width();
+// 	var h = Board.ele.height();
+// 	var marginLeft = (windowWidth - w) * 0.5;
+// 	var marginTop = (windowHeight - h) * 0.5;
+// 	var mapRectSize  = 100;
+// 	var x = (marginLeft - mapRectSize) + (point.x - marginLeft) / w * mapRectSize;
+// 	var y = (marginTop - mapRectSize) + (point.y - marginTop) / h * mapRectSize;
+// 	return {x:x, y:y}
+// }

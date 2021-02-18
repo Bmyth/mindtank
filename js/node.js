@@ -5,15 +5,17 @@ function Node(params){
 	node.uiGroup = new Group();
 	
 	node.ele = $('<p class="node"></p>').appendTo(Nodes.ele);
-	node.onBoard = params.textele ? true : false;
+	node.onPath = params.textele ? true : false;
 	node.nid = params.nid;
 	node.prevUid = params.prevuid;
 
-	node.ele.text(Model.getText(node.nid))
+	if(node.onPath){
+		node.ele.addClass('onpath').text(Model.getText(node.nid))
+	}
 
 	var x,y;
 
-	if(node.onBoard){
+	if(node.onPath){
 		var textEleRect = params.textele[0].getBoundingClientRect();
 		x = textEleRect.left + textEleRect.width * 0.5;
 		y = textEleRect.top + textEleRect.height * 0.5;
@@ -38,13 +40,16 @@ function Node(params){
 	
 	if(node.prevUid){
 		node.prevNode = Nodes.getNodeByUid(node.prevUid);
+		node.prevX = node.prevNode.posX;
+		node.prevY = node.prevNode.posY;
 		var link = new Path.Line({
 		    from: [node.posX, node.posY],
-		    to: [node.prevNode.posX, node.prevNode.posY],
+		    to: [node.prevX, node.prevY],
 		    strokeColor: '#333',
 		    strokeWidth: 0.5
 		});
-		link.dashArray = [10, 4];
+		link.dashArray = [5, 5];
+
 		link.name = 'link';
 		node.uiGroup.addChild(link);
 		link.sendToBack();
@@ -52,16 +57,16 @@ function Node(params){
 
 	var prevObj = node.prevNode ? node.prevNode.phyObj : null;
 
-	var isStatic = node.onBoard;
+	var isStatic = node.onPath;
 	node.phyObj = Physic.addObj({
 		x: x,
 		y: y,
-		w: rect.width,
-		h: rect.height,
+		w: Math.max(50,rect.width),
+		h: Math.max(50,rect.height),
 		isStatic: isStatic,
-		frictionAir: 0.01
+		frictionAir: 0.01,
+		mass: 20
 	},prevObj);
-	node.phyObj.mass = 10;
 
 	node.onFrame = _node_onFrame;
 	node.release = _node_release;
@@ -75,30 +80,43 @@ function Node(params){
 
 function _node_onFrame(i) {
 	var x,y;
-	if(this.onBoard){
-		x = this.posX;
-		y = this.posY;
+	if(this.phyObj.isStatic){
+		x = parseInt(this.posX);
+		y = parseInt(this.posY);
 	}else{
-		x = this.phyObj.position.x;
-		y = this.phyObj.position.y;
+		x = (this.phyObj.position.x);
+		y = (this.phyObj.position.y);
+	}
+	var needSync = false;
+	if(this.prevNode && (this.prevX != this.prevNode.posX || this.prevY != this.prevNode.posY)){
+		this.prevX = this.prevNode.posX;
+		this.prevY = this.prevNode.posY;
+		needSync = true;
 	}
 	if(this.posX != x || this.posY != y){
 		this.posX = x;
 		this.posY = y;
+		needSync = true;
+	}
+	if(needSync){
 		this.syncPos();
 	}
 }
 
 function _node_release() {
-	this.onBoard = false;
 	Physic.setStatic(this.phyObj, false)
 }
 
-function _node_updateBoardElePos(boardEle){
-	var rect = boardEle[0].getBoundingClientRect();
-	this.posX = rect.left + rect.width * 0.5;
-	this.posY =  rect.top + rect.height * 0.5;
-	this.syncPos();
+function _node_updateBoardElePos(){
+	if(this.phyObj.isStatic){
+		var boardEle = Board.getNodeEle(this.uid);
+		if(boardEle){
+			var rect = boardEle[0].getBoundingClientRect();
+			this.posX = rect.left + rect.width * 0.5;
+			this.posY =  rect.top + rect.height * 0.5;
+			this.syncPos();
+		}
+	}
 }
 
 function _node_syncPos() {
@@ -115,13 +133,17 @@ function _node_syncPos() {
 		link.segments[1].point.x = this.prevNode.posX;
 		link.segments[1].point.y = this.prevNode.posY;
 	}
+
+	Nodes.updateRelatedLinks(this.nid);
 }
 
 function _node_float() {
-	var force = 0.02;
-	var x = force * (Math.random() - 0.5);
-	var y = force * (Math.random() - 0.5);
-	Physic.applyForce(this.phyObj, {x:x, y:y})
+	if(!this.phyObj.isStatic){
+		var force = this.onPath ? 0.01 : 0.05;
+		var x = force * (Math.random() - 0.5);
+		var y = force * (Math.random() - 0.5);
+		Physic.applyForce(this.phyObj, {x:x, y:y})
+	}
 }
 
 function generateUid(){

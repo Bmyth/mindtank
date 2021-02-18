@@ -10,6 +10,7 @@ function _entry_init(){
     Entry.ele.focus();
     Entry.ele.on('keyup', _entry_Keyup);
     Entry.ele.on('compositionend', _entry_compositionend);
+    $('body').on('click', _entry_focus);
 }
 
 function _entry_Keyup(e){
@@ -60,6 +61,9 @@ function _entry_esc() {
     Board.close();
 }
 
+function _entry_focus() {
+    Entry.ele.focus();
+}
 
 function _entry_direction(direction, shiftKey) {
 	var step = 40;
