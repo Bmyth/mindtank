@@ -7,10 +7,10 @@
     <link rel="stylesheet" href="asset/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/index.css"/>
 
-    <script type="text/javascript" src="lib/paper.js"></script>
     <script type="text/javascript" src="lib/matter.min.js"></script>
     <script type="text/javascript" src="lib/jquery.js"></script>
     <script type="text/javascript" src="lib/underscore-min.js"></script>
+    <script type="text/javascript" src="lib/svg.min.js"></script>
 
     <script type="text/javascript" src="js/main.js"></script>
     <script type="text/javascript" src="js/physic.js"></script>
@@ -23,10 +23,7 @@
   </head>
   <body class="w100 h100 bg-white font-ss oh">
     <textarea id="entry" class="hideFromScreen"></textarea>
-
-    <div id="nodecontainer" class="absolute z20"></div>
     <div id="board" class="absolute space-break board z30"></div>
-
-    <canvas id="paper" class="z10"></canvas>
+    <div id="svgpaper" class="layer z10"></div>
   </body>
 </html>

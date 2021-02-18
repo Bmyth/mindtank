@@ -60,9 +60,7 @@ function _board_update(val) {
     }else{
     	Board.ele.fadeIn()
     }
-
     _board_updateTop();
-    Nodes.updateBoardNodes();
 }
 
 function _board_release() {
@@ -77,7 +75,12 @@ function _board_release() {
 
 
 function _board_updateTop() {
-	Board.ele.css('top', (windowHeight - Board.ele.height()) * 0.5);
+	var top = Board.ele.css('top');
+	var predict = (windowHeight - Board.ele.height()) * 0.5;
+	if(Math.abs(top - predict) > 1){
+		Board.ele.css('top', (windowHeight - Board.ele.height()) * 0.5);
+		Nodes.updateBoardNodes();
+	}	
 }
 
 function _board_close() {

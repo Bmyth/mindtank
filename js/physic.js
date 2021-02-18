@@ -41,8 +41,8 @@ function _phy_addObj(params, prevObj){
 		var c = Matter.Constraint.create({
 			bodyA: rect,
 	       	bodyB:prevObj,
-	       length: 100,
-	       stiffness: 0.7
+	       	length: 70,
+	       	stiffness: 0.7
 	    });
 	    this.World.add(this.world, [c]);
 	}

@@ -3,13 +3,14 @@ var Nodes = {
 	path: [],
 	items: [],
 	links: [],
+	updatingUids: [],
 	ele: null,
 	frame: null,
 	boardTop: 0,
+	iClock: 0,
 	init: _nodes_init,
 	addNode: _nodes_addNode,
 	updateBoardNodes: _nodes_updateBoardNodes,
-	updateRelatedLinks: _nodes_updateRelatedLinks,
 	releaseNodes: _nodes_releaseNodes,
 	getLinkByNid: _nodes_getLinkByNid,
 	getNodeByUid: _nodes_getNodeByUid,
@@ -18,12 +19,7 @@ var Nodes = {
 }
 
 function _nodes_init() {
-	Nodes.ele = $('#nodecontainer').css({
-        width: windowWidth + 'px',
-        height: windowHeight + 'px'
-    });
-    Nodes.frame = new Group();
-    Nodes.frame.onFrame = _nodes_onFrame;
+	Nodes.ele = $('#svgpaper');
 
     Model.nodes.forEach(function(n) {
     	var node = new Node({
@@ -38,14 +34,7 @@ function _nodes_init() {
     		var lnode = _nodes_getNodeByNid(l);
     		var link = _nodes_getLinkByNid(n.id, l)
     		if(!link){
-    			link = new Path.Line({
-				    from: [node.posX, node.posY],
-				    to: [lnode.posX, lnode.posY],
-				    strokeColor: '#aaa',
-				    strokeWidth: 0.1,
-				    opacity: 0.5
-				});
-				// link.dashArray = [5, 5];
+    			link = draw.line(node.posX, node.posY, lnode.posX, lnode.posY).stroke({ width: 0.1,color: '#aaa'});
 				link.fromNid = n.id;
 				link.fromUid = node.uid;
 				link.toNid = l;
@@ -54,16 +43,30 @@ function _nodes_init() {
     		}
     	})
     })
+
+    setInterval(_nodes_onFrame, 40)
 }
 
-function _nodes_onFrame(i) {
-	if(i.count % 500 == 0){
-		Nodes.items.forEach(function(n){
-			if(Math.random() > 0.9){
-				n.float();
-			}
+function _nodes_onFrame() {
+	Nodes.updatingUids = [];
+	Nodes.items.forEach(function(n){
+		if(Nodes.iClock % 200 == 0 && Math.random() > 0.9){
+			n.float();
+		}
+		n.onFrame();
+	})
+	Nodes.updatingUids = _.uniq(Nodes.updatingUids);
+	Nodes.links.forEach(function(l) {
+		var f = _.find(Nodes.updatingUids, function(n) {
+			return n == l.fromUid || n == l.toUid;
 		})
-	}
+		if(f){
+			var fromNode = _nodes_getNodeByUid(l.fromUid);
+			var toNode = _nodes_getNodeByUid(l.toUid);
+			l.plot(fromNode.posX, fromNode.posY, toNode.posX, toNode.posY);
+		}
+	})
+	Nodes.iClock++;
 }
 
 function _nodes_addNode(ele, prevText) {
@@ -100,19 +103,6 @@ function _nodes_updateBoardNodes() {
 			}
 		})
 	}
-}
-
-function _nodes_updateRelatedLinks(nid) {
-	Nodes.links.forEach(function(l) {
-		if(l.fromNid == nid || l.toNid == nid){
-			var fromNode = _nodes_getNodeByUid(l.fromUid);
-			var toNode = _nodes_getNodeByUid(l.toUid);
-			l.segments[0].point.x = fromNode.posX;
-			l.segments[0].point.y = fromNode.posY;
-			l.segments[1].point.x = toNode.posX;
-			l.segments[1].point.y = toNode.posY;
-		}
-	})
 }
 
 function _nodes_getNodeByUid(uid) {

@@ -1,68 +1,44 @@
 var minNodeDistance = 100;
 function Node(params){
-	var node = new Group();
+	var node = {};
 	node.uid = generateUid();
-	node.uiGroup = new Group();
-	
-	node.ele = $('<p class="node"></p>').appendTo(Nodes.ele);
 	node.onPath = params.textele ? true : false;
 	node.nid = params.nid;
 	node.prevUid = params.prevuid;
 
-	if(node.onPath){
-		node.ele.addClass('onpath').text(Model.getText(node.nid))
-	}
+	//ele & pos
+	node.textele = draw.plain(Model.getText(node.nid)).fill('#666').font({size:14}).attr('uid',node.uid);
+	node.dotele = draw.circle(5).fill('#aaa').attr('uid',node.uid);
 
-	var x,y;
+	node.dotele.on('mouseenter',_node_mouseEnterDot);
+	node.textele.on('mouseleave',_node_mouseLeaveText);
 
 	if(node.onPath){
 		var textEleRect = params.textele[0].getBoundingClientRect();
-		x = textEleRect.left + textEleRect.width * 0.5;
-		y = textEleRect.top + textEleRect.height * 0.5;
-	}else{
-		x = windowWidth * Math.random();
-		y = windowHeight * Math.random();
+		node.posX = textEleRect.left + textEleRect.width * 0.5;
+		node.posY = textEleRect.top + textEleRect.height * 0.5;
+	}else{ 
+		node.posX = windowWidth * Math.random();
+		node.posY = windowHeight * Math.random();
 	}
-	
-	node.posX = x;
-	node.posY = y;
 
-	var rect = node.ele[0].getBoundingClientRect();
-	var	uiFrame =  new Path.Rectangle({
-    	size: [rect.width, rect.height],
-    	strokeColor: '#666',
-    	strokeWidth: 1,
-    	opacity: 0
-    });
-    uiFrame.bringToFront();
-    uiFrame.name = 'frame';
-    node.uiGroup.addChild(uiFrame);
-	
+	//pathlink
 	if(node.prevUid){
 		node.prevNode = Nodes.getNodeByUid(node.prevUid);
 		node.prevX = node.prevNode.posX;
 		node.prevY = node.prevNode.posY;
-		var link = new Path.Line({
-		    from: [node.posX, node.posY],
-		    to: [node.prevX, node.prevY],
-		    strokeColor: '#333',
-		    strokeWidth: 0.5
-		});
-		link.dashArray = [5, 5];
-
-		link.name = 'link';
-		node.uiGroup.addChild(link);
-		link.sendToBack();
+		node.link = draw.line(node.posX, node.posY, node.prevX, node.prevY).stroke({ width: 0.5,color: '#666'});
 	}
 
+	//phyobj
+	var size = {width:node.textele.width(), height:node.textele.height()};
 	var prevObj = node.prevNode ? node.prevNode.phyObj : null;
-
 	var isStatic = node.onPath;
 	node.phyObj = Physic.addObj({
-		x: x,
-		y: y,
-		w: Math.max(50,rect.width),
-		h: Math.max(50,rect.height),
+		x: node.posX,
+		y: node.posY,
+		w: Math.max(30,size.width),
+		h: Math.max(30,size.height),
 		isStatic: isStatic,
 		frictionAir: 0.01,
 		mass: 20
@@ -73,33 +49,42 @@ function Node(params){
 	node.updateBoardElePos = _node_updateBoardElePos;
 	node.syncPos = _node_syncPos;
 	node.float = _node_float;
+	node.setStatus = _node_setStatus;
 
+	var status = node.onPath ? 'text' : 'dot';
+	node.setStatus(status)
 	node.syncPos();
 	return node;
 }
 
 function _node_onFrame(i) {
 	var x,y;
+	var d = 0;
 	if(this.phyObj.isStatic){
 		x = parseInt(this.posX);
 		y = parseInt(this.posY);
 	}else{
-		x = (this.phyObj.position.x);
-		y = (this.phyObj.position.y);
+		x = this.phyObj.position.x;
+		y = this.phyObj.position.y;
 	}
 	var needSync = false;
 	if(this.prevNode && (this.prevX != this.prevNode.posX || this.prevY != this.prevNode.posY)){
+		d = d + Math.abs(this.prevNode.posX - this.prevX) + Math.abs(this.prevNode.posY - this.prevY);
 		this.prevX = this.prevNode.posX;
 		this.prevY = this.prevNode.posY;
 		needSync = true;
 	}
 	if(this.posX != x || this.posY != y){
+		d = d + Math.abs(this.posX - x) + Math.abs(this.posY - y);
 		this.posX = x;
 		this.posY = y;
 		needSync = true;
 	}
 	if(needSync){
 		this.syncPos();
+	}
+	if(d > 0.1){
+		Nodes.updatingUids.push(this.uid)
 	}
 }
 
@@ -120,21 +105,13 @@ function _node_updateBoardElePos(){
 }
 
 function _node_syncPos() {
-	var uiFrame = this.uiGroup.children['frame'];
-	var rect = this.ele[0].getBoundingClientRect();
-	uiFrame.position.x = parseInt(this.posX);
-	uiFrame.position.y = parseInt(this.posY);
-	this.ele.css({left: this.posX - rect.width * 0.5, top: this.posY - rect.height * 0.5})
-
-	if(this.prevNode){
-		var link = this.uiGroup.children['link'];
-		link.segments[0].point.x = this.posX;
-		link.segments[0].point.y = this.posY;
-		link.segments[1].point.x = this.prevNode.posX;
-		link.segments[1].point.y = this.prevNode.posY;
+	// var size = {width:this.textele.width(), height:this.textele.height()};
+	this.dotele.center(this.posX, this.posY)
+	this.textele.center(this.posX, this.posY)
+	
+	if(this.link){
+		this.link.plot(this.posX, this.posY, this.prevNode.posX, this.prevNode.posY);
 	}
-
-	Nodes.updateRelatedLinks(this.nid);
 }
 
 function _node_float() {
@@ -143,6 +120,31 @@ function _node_float() {
 		var x = force * (Math.random() - 0.5);
 		var y = force * (Math.random() - 0.5);
 		Physic.applyForce(this.phyObj, {x:x, y:y})
+	}
+}
+
+function _node_mouseEnterDot() {
+	var node = Nodes.getNodeByUid(this.attr('uid'));
+    node.setStatus('text');
+}
+
+function _node_mouseLeaveText() {
+	var node = Nodes.getNodeByUid(this.attr('uid'));
+	if(!node.onPath){
+		node.setStatus('dot');
+	}
+}
+
+
+
+function _node_setStatus(status) {
+	if(status == 'text'){
+		this.dotele.hide();
+		this.textele.show()
+	}
+	if(status == 'dot'){
+		this.dotele.show();
+		this.textele.hide()
 	}
 }
 
