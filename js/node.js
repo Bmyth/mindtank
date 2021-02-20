@@ -2,7 +2,7 @@ var minNodeDistance = 100;
 function Node(params){
 	var node = {};
 	node.uid = generateUid();
-	node.onPath = params.textele ? true : false;
+	node.onPath = params.onPath ? true : false;
 	node.nid = params.nid;
 	node.prevUid = params.prevuid;
 
@@ -12,11 +12,11 @@ function Node(params){
 
 	node.dotele.on('mouseenter',_node_mouseEnterDot);
 	node.textele.on('mouseleave',_node_mouseLeaveText);
+	node.textele.on('click',_node_mouseClickText);
 
-	if(node.onPath){
-		var textEleRect = params.textele[0].getBoundingClientRect();
-		node.posX = textEleRect.left + textEleRect.width * 0.5;
-		node.posY = textEleRect.top + textEleRect.height * 0.5;
+	if(params.pos){
+		node.posX = params.pos.x;
+		node.posY = params.pos.y;
 	}else{ 
 		node.posX = windowWidth * Math.random();
 		node.posY = windowHeight * Math.random();
@@ -46,10 +46,14 @@ function Node(params){
 
 	node.onFrame = _node_onFrame;
 	node.release = _node_release;
-	node.updateBoardElePos = _node_updateBoardElePos;
 	node.syncPos = _node_syncPos;
 	node.float = _node_float;
+	node.setStatic = _node_setStatic; 
 	node.setStatus = _node_setStatus;
+	node.focus = _node_focus;
+	node.unfocus = _node_unfocus;
+	node.move = _node_move;
+	node.registerPosChange = _node_registerPosChange;
 
 	var status = node.onPath ? 'text' : 'dot';
 	node.setStatus(status)
@@ -58,15 +62,9 @@ function Node(params){
 }
 
 function _node_onFrame(i) {
-	var x,y;
 	var d = 0;
-	if(this.phyObj.isStatic){
-		x = parseInt(this.posX);
-		y = parseInt(this.posY);
-	}else{
-		x = this.phyObj.position.x;
-		y = this.phyObj.position.y;
-	}
+	var x = this.phyObj.position.x;
+	var y = this.phyObj.position.y;
 	var needSync = false;
 	if(this.prevNode && (this.prevX != this.prevNode.posX || this.prevY != this.prevNode.posY)){
 		d = d + Math.abs(this.prevNode.posX - this.prevX) + Math.abs(this.prevNode.posY - this.prevY);
@@ -83,25 +81,14 @@ function _node_onFrame(i) {
 	if(needSync){
 		this.syncPos();
 	}
-	if(d > 0.1){
+	if(d > 0.1 || this.posChanged){
+		this.posChanged = false;
 		Nodes.updatingUids.push(this.uid)
 	}
 }
 
 function _node_release() {
 	Physic.setStatic(this.phyObj, false)
-}
-
-function _node_updateBoardElePos(){
-	if(this.phyObj.isStatic){
-		var boardEle = Board.getNodeEle(this.uid);
-		if(boardEle){
-			var rect = boardEle[0].getBoundingClientRect();
-			this.posX = rect.left + rect.width * 0.5;
-			this.posY =  rect.top + rect.height * 0.5;
-			this.syncPos();
-		}
-	}
 }
 
 function _node_syncPos() {
@@ -129,13 +116,19 @@ function _node_mouseEnterDot() {
 }
 
 function _node_mouseLeaveText() {
-	var node = Nodes.getNodeByUid(this.attr('uid'));
-	if(!node.onPath){
-		node.setStatus('dot');
-	}
+	// var node = Nodes.getNodeByUid(this.attr('uid'));
+	// if(!node.onPath){
+	// 	node.setStatus('dot');
+	// }
 }
 
+function _node_mouseClickText() {
+	Nodes.clickNode(this.attr('uid'))
+}
 
+function _node_setStatic(isStatic) {
+	Physic.setStatic(this.phyObj, isStatic)
+}
 
 function _node_setStatus(status) {
 	if(status == 'text'){
@@ -146,6 +139,30 @@ function _node_setStatus(status) {
 		this.dotele.show();
 		this.textele.hide()
 	}
+	if(status == 'hide'){
+		this.dotele.hide();
+		this.textele.hide()
+	}
+}
+
+function _node_focus() {
+	this.focus = true;
+	// this.setStatus('text');
+	this.textele.font({'weight':'bold'});
+}
+
+function _node_unfocus() {
+	this.focus = false;
+	this.textele.font({'weight':'light'});
+}
+
+function _node_move(pos) {
+	this.phyObj.position.x = pos.x;
+	this.phyObj.position.y = pos.y;
+}
+
+function _node_registerPosChange() {
+	this.posChanged = true;
 }
 
 function generateUid(){

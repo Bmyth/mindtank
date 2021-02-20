@@ -1,16 +1,15 @@
 var Nodes = {
 	nodeIndex: 0,
-	path: [],
 	items: [],
 	links: [],
 	updatingUids: [],
 	ele: null,
 	frame: null,
-	boardTop: 0,
 	iClock: 0,
 	init: _nodes_init,
 	addNode: _nodes_addNode,
-	updateBoardNodes: _nodes_updateBoardNodes,
+	clickNode: _nodes_clickNode,
+	focusNode: _nodes_focusNode,
 	releaseNodes: _nodes_releaseNodes,
 	getLinkByNid: _nodes_getLinkByNid,
 	getNodeByUid: _nodes_getNodeByUid,
@@ -20,6 +19,7 @@ var Nodes = {
 
 function _nodes_init() {
 	Nodes.ele = $('#svgpaper');
+	Nodes.map = $('#map');
 
     Model.nodes.forEach(function(n) {
     	var node = new Node({
@@ -69,18 +69,45 @@ function _nodes_onFrame() {
 	Nodes.iClock++;
 }
 
-function _nodes_addNode(ele, prevText) {
-	var text = ele.text();
-	var id = Model.addNode(text, prevText);
-	ele.attr('nid', id);
-	var node = new Node({
-		textele: ele, 
-		nid: ele.attr('nid'),
-		prevuid: ele.attr('prevuid')
-	});
-	ele.attr('uid',node.uid).addClass('nodeholder');
-	Nodes.path.push(node);
+function _nodes_addNode(text) {
+	var node = _nodes_getNodeByNid()
+	var nid = Model.addNode(text);
+	var node = _nodes_getNodeByNid(nid);
+	if(!node){
+		node = new Node({
+			nid: nid
+		});
+	}
+	node.setStatus('text');
 	Nodes.items.push(node);
+	Nodes.focusNode(node.uid);
+}
+
+function _nodes_clickNode(uid) {
+	_nodes_focusNode(uid);
+	Board.editNode(uid);
+	var node = _nodes_getNodeByUid(uid);
+	node.move({x:windowWidth * 0.5, y:windowHeight * 0.5})
+	node.setStatic(true)
+	node.setStatus('hide');
+	node.registerPosChange();
+
+	Nodes.items.forEach(function(n){
+		if(Model.isLinked(node.nid, n.nid)){
+			n.setStatus('text');
+		}else{
+			n.setStatus('dot');
+		}
+	})
+}
+
+function _nodes_focusNode(uid) {
+	var node = _nodes_getFocusNode();
+	if(node.uid != uid){
+		node.unfocus();
+	}
+	node = _nodes_getNodeByUid(uid);
+	node.focus();
 }
 
 function _nodes_releaseNodes() {
@@ -92,17 +119,6 @@ function _nodes_releaseNodes() {
 			}
 		}
 	})
-}
-
-function _nodes_updateBoardNodes() {
-	if(this.boardTop != Board.ele.css('top')){
-		this.boardTop = Board.ele.css('top');
-		Nodes.path.forEach(function(n){
-			if(n.onPath){
-				n.updateBoardElePos();
-			}
-		})
-	}
 }
 
 function _nodes_getNodeByUid(uid) {
@@ -120,5 +136,11 @@ function _nodes_getNodeByNid(nid) {
 function _nodes_getLinkByNid(fromNid, toNid) {
 	return _.find(Nodes.links, function(l){
 		return l.fromNid == fromNid && l.toNid == toNid;
+	})
+}
+
+function _nodes_getFocusNode() {
+	return _.find(Nodes.items, function(n){
+		return n.focus;
 	})
 }

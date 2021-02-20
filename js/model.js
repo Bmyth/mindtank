@@ -2,6 +2,7 @@ var Model = {
 	init : _model_init,
 	addNode : _model_add,
 	getText : _model_getText,
+	isLinked: _model_isLinked,
 	nodes: []
 }
 
@@ -52,4 +53,12 @@ function _model_getNodeById(id){
 function _model_getText(id) {
 	var node = _model_getNodeById(id);
 	return node ? node.t : '';
+}
+
+function _model_isLinked(nid1, nid2) {
+	var n = _model_getNodeById(nid1);
+	if(n.links.indexOf(nid2) >= 0){
+		return true;
+	}
+	return false;
 }

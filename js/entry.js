@@ -10,7 +10,7 @@ function _entry_init(){
     Entry.ele.focus();
     Entry.ele.on('keyup', _entry_Keyup);
     Entry.ele.on('compositionend', _entry_compositionend);
-    $('body').on('click', _entry_focus);
+    $('body').on('click', _entry_show);
 }
 
 function _entry_Keyup(e){
@@ -18,8 +18,11 @@ function _entry_Keyup(e){
 　　	var key = e.keyCode || e.which;
 
 	// console.log(key)
+    if(key == '13'){
+        _entry_enter();
+    }
     // left
-    if(key == '37'){
+    else if(key == '37'){
         _entry_direction('left', event.shiftKey);
     }
     // right
@@ -57,13 +60,22 @@ function _entry_compositionend() {
     }
 }
 
+function _entry_enter() {
+    if(Board.onEdit){
+        Board.enter();
+    }
+}
+
 function _entry_esc() {
     Entry.ele.val('');
     Board.close();
 }
 
-function _entry_focus() {
-    Entry.ele.focus();
+function _entry_show(e) {
+    if(e.target.tagName == 'svg' && !Board.onEdit){
+        Entry.ele.val('').focus();
+        Board.show();
+    }
 }
 
 function _entry_direction(direction, shiftKey) {

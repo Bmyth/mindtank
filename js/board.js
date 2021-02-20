@@ -1,66 +1,48 @@
 var Board = {
 	init: _board_init,
+	show: _board_show,
+	enter: _board_enter,
 	update: _board_update,
+	editNode: _board_editNode,
 	release: _board_release,
 	close: _board_close,
 	getNodeEle: _board_getNodeEle,
-	onEditNode: false,
-	ele: null
+	onEdit: false,
+	onEditNode: null,
+	ele: null,
+	textEle: null
 }
 
 function _board_init(){
-	Board.ele = $('#board').hide().empty();
+	Board.ele = $('#board').hide();
+	Board.textEle = $('#board p');
 	_board_update();
 }
 
-function _board_update(val) {
-	val = val || '';
-	var html = Board.ele.html();
-	if(val == '@'){
-		if(!Board.onEditNode){
-			Board.onEditNode = true;
-			var prevUid;
-			var prevspan = Board.ele.find('span').last();
-			if(prevspan.length > 0){
-				prevUid = prevspan.attr('uid');
-			}else{
-				prevUid = Nodes.path.length > 0 ? Nodes.path[Nodes.path.length - 1].uid : '';
-			}
-			html = html.substring(0,html.length-1);
-			Board.ele.html(html + '<span></span>');
-			var span = Board.ele.find('span').last();
-			span.attr('prevuid',prevUid)
-		}else{
-			var span = Board.ele.find('span').last();
-			var prevText = [];
-			if(span.attr('prevuid')){
-				prevText.push(Board.ele.find('[uid=' + span.attr('prevuid') + ']').text());
-			}
-			var t = span.text().replace('@','');
-			t = t.substring(0, t.length - 1);
-			span.text(t)
-			Nodes.addNode(span, prevText);
-			Board.onEditNode = false;
-		}
-		html = Board.ele.html();
-		val = '';
-	}
+function _board_show() {
+	Board.onEdit = true;
+	Board.ele.fadeIn();
+	_board_update();
+}
 
-	val = val + '_';
-	if(Board.onEditNode){
-        var span = Board.ele.find('span').last();
-        span.text('@' + val);
-    }else{
-    	html = html.substring(0,html.lastIndexOf('</span>')) + '</span>' + val;
-       	Board.ele.html(html) 
-    }
+function _board_enter() {
+	Nodes.addNode(Entry.ele.val());
+	Board.onEdit = false;
+	Board.ele.fadeOut();
+}
 
-    if(Board.ele.html() == '' || Board.ele.html() == '_'){
-    	Board.ele.fadeOut()
-    }else{
-    	Board.ele.fadeIn()
-    }
-    _board_updateTop();
+function _board_update() {
+
+	Board.textEle.text(Entry.ele.val());
+	_board_updateCss();
+}
+
+function _board_editNode(uid) {
+	var node = Nodes.getNodeByUid(uid);
+	Nodes.onEditNode = node;
+	var text = Model.getText(node.nid);
+	Entry.ele.val(text).focus();
+	_board_show();
 }
 
 function _board_release() {
@@ -74,13 +56,20 @@ function _board_release() {
 }
 
 
-function _board_updateTop() {
-	var top = Board.ele.css('top');
-	var predict = (windowHeight - Board.ele.height()) * 0.5;
-	if(Math.abs(top - predict) > 1){
-		Board.ele.css('top', (windowHeight - Board.ele.height()) * 0.5);
-		Nodes.updateBoardNodes();
-	}	
+function _board_updateCss() {
+	var lEleMin = 70;
+	var padding = 5;
+	var rect = Board.textEle[0].getBoundingClientRect();
+	var w = rect.width;
+	var h = rect.height;
+	var wEle = Math.max(w + padding * 2, lEleMin);
+	var left = (windowWidth - wEle) * 0.5;
+	var top  = (windowHeight - wEle) * 0.5;
+	var topText = (wEle - h) * 0.5;
+	var leftText = (wEle - w) * 0.5;
+
+	Board.ele.css({width:wEle,height:wEle,left:left,top:top});	
+	Board.textEle.css({top:topText, left: leftText})
 }
 
 function _board_close() {

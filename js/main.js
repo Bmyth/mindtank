@@ -8,10 +8,6 @@ $(function() {
         width: windowWidth + 'px',
         height: windowHeight + 'px'
     })
-    // var FrontPaper = new paper.PaperScope();
-    // FrontPaper.setup($("#paper")[0]);
-    // FrontPaper.install(window);
-
 
     $("#svgpaper").css({
         width: windowWidth + 'px',
