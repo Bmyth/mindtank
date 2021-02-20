@@ -16,5 +16,5 @@
 .hide {display: none;}
 .hideFromScreen {position: absolute; left: -9999px; top: -9999px;}
 
-.board {width: calc(50% - 20px); height: auto; top: 25%; left: 25%; border: 1px solid #666; padding: 10px; background: rgba(255,255,255,0.6); font-size: 14px;}
+.board {width: calc(50% - 20px); height: auto; top: 25%; left: 25%; border: 1px solid #666; padding: 10px; background: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.5;}
 .board span{display: inline-block; width: auto; height: auto;font-size: 14px;font-weight: bold;}

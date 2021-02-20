@@ -33,7 +33,8 @@ function _entry_Keyup(e){
     // down
     else if(key == '40'){
         _entry_direction('down', event.shiftKey);
-    }else if(key == '27'){
+    }
+    else if(key == '27'){
         _entry_esc();
     }else{
         _entry_compositionend();
@@ -66,13 +67,13 @@ function _entry_focus() {
 }
 
 function _entry_direction(direction, shiftKey) {
-	var step = 40;
-	var mode = shiftKey ? 'Parallel' : 'Serial';
-	if(entry.val()){
-		Nodes.createNode({direction:direction, mode:mode});
-	}else{
-		var dx = DirectionConfig[direction].iX * step;
-		var dy = DirectionConfig[direction].iY * step;
-		tempNode && tempNode.adjustPos({x:dx, y:dy});
-	}
+	// var step = 40;
+	// var mode = shiftKey ? 'Parallel' : 'Serial';
+	// if(entry.val()){
+	// 	Nodes.createNode({direction:direction, mode:mode});
+	// }else{
+	// 	var dx = DirectionConfig[direction].iX * step;
+	// 	var dy = DirectionConfig[direction].iY * step;
+	// 	tempNode && tempNode.adjustPos({x:dx, y:dy});
+	// }
 }
