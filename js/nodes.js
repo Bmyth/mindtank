@@ -6,6 +6,7 @@ var Nodes = {
 	ele: null,
 	frame: null,
 	iClock: 0,
+	focusedNode: null, 
 	init: _nodes_init,
 	addNode: _nodes_addNode,
 	clickNode: _nodes_clickNode,
@@ -50,10 +51,7 @@ function _nodes_init() {
 function _nodes_onFrame() {
 	Nodes.updatingUids = [];
 	Nodes.items.forEach(function(n){
-		if(Nodes.iClock % 200 == 0 && Math.random() > 0.9){
-			n.float();
-		}
-		n.onFrame();
+		n.onFrame(Nodes.iClock);
 	})
 	Nodes.updatingUids = _.uniq(Nodes.updatingUids);
 	Nodes.links.forEach(function(l) {
@@ -67,6 +65,9 @@ function _nodes_onFrame() {
 		}
 	})
 	Nodes.iClock++;
+	if(Nodes.iClock == 2500){
+		Nodes.iClock = 0;
+	}
 }
 
 function _nodes_addNode(text) {
@@ -84,21 +85,18 @@ function _nodes_addNode(text) {
 }
 
 function _nodes_clickNode(uid) {
-	_nodes_focusNode(uid);
+	// _nodes_focusNode(uid);
 	Board.editNode(uid);
 	var node = _nodes_getNodeByUid(uid);
-	node.move({x:windowWidth * 0.5, y:windowHeight * 0.5})
-	node.setStatic(true)
-	node.setStatus('hide');
-	node.registerPosChange();
+	node.focus();
 
-	Nodes.items.forEach(function(n){
-		if(Model.isLinked(node.nid, n.nid)){
-			n.setStatus('text');
-		}else{
-			n.setStatus('dot');
-		}
-	})
+	// Nodes.items.forEach(function(n){
+	// 	if(Model.isLinked(node.nid, n.nid)){
+	// 		n.around(node);
+	// 	}else{
+	// 		n.away(node);
+	// 	}
+	// })
 }
 
 function _nodes_focusNode(uid) {

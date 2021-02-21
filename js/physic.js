@@ -1,7 +1,8 @@
 var Physic ={
 	init: _phy_init,
-	addObj: _phy_addObj,
+	addCircle: _phy_addCircle,
 	setStatic: _phy_setStatic,
+	setPosition: _phy_setPosition,
 	getObjectByIdx: _phy_getObjectByIdx,
 	deleteObject: _phy_deleteObject,
 	applyForce: _phy_applyForce,
@@ -30,26 +31,20 @@ function _phy_init(){
 	this.World.add(this.world, [l1,l2,l3,l4]);
 }
 
+function _phy_addCircle(params){
+	var circle = this.Bodies.circle(params.x, params.y, params.r, params);
+	this.World.add(this.world, [circle]);
+	return circle;
+}
+
 function _phy_setStatic(obj, isStatic) {
 	this.Body.setStatic(obj, isStatic);
 }
 
-function _phy_addObj(params, prevObj){
-	var rect = this.Bodies.rectangle(params.x, params.y, params.w, params.h, params);
-	this.World.add(this.world, [rect]);
-	if(prevObj){
-		var c = Matter.Constraint.create({
-			bodyA: rect,
-	       	bodyB:prevObj,
-	       	length: 70,
-	       	stiffness: 0.7
-	    });
-	    this.World.add(this.world, [c]);
-	}
-	
-	
-	return rect;
+function _phy_setPosition(obj, position) {
+	this.Body.setPosition(obj, position);
 }
+
 
 function _phy_getObjectByIdx(idx){
 	return this.objects.find(function(i){
