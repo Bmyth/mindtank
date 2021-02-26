@@ -9,14 +9,18 @@ function Node(params){
 	node.displayType = '';
 	node.target = null;
 	node.ele = null;
+	node.links = [];
 
 	node.onFrame = _node_onFrame;
+
+	node.setText = _node_setText;
+	node.setPos = _node_setPos;
+	node.setStatus = _node_setStatus;
 	node.displayAs = _node_displayAs;
-	node.setStatic = _node_setStatic; 
 	node.moveTo = _node_moveTo;
-	node.focus = _node_focus;
-	node.setAround = _node_setAround;
-	node.setUnAround = _node_setUnAround;
+
+	node.linkTo = _node_linkTo;
+	node.isLinked = _node_isLinked;
 
 	//pos
 	if(params.pos){
@@ -27,26 +31,24 @@ function Node(params){
 		node.posY = windowHeight * Math.random();
 	}
 
-	//ele
-	node.displayAs('dot');	
-
-	//pathlink
-	// if(node.prevUid){
-	// 	node.prevNode = Nodes.getNodeByUid(node.prevUid);
-	// 	node.prevX = node.prevNode.posX;
-	// 	node.prevY = node.prevNode.posY;
-	// 	node.link = draw.line(node.posX, node.posY, node.prevX, node.prevY).stroke({ width: 0.5,color: '#666'});
-	// }
-
+	
+	if(!params.temp){
+		node.float();
+	}else{
+		node.temp = true;
+		node.uid = 'temp';
+		node.displayAs('none');
+	}
+	
 	//phyobj
-	// var prevObj = node.prevNode ? node.prevNode.phyObj : null;
-	var isStatic = false;
+	var isStatic = !node.temp;
+	var size = !node.temp ? 12 : 0;
 	node.phyObj = Physic.addCircle({
 		x: node.posX,
 		y: node.posY,
-		r: 12,
+		r: size,
 		isStatic: isStatic,
-		frictionAir: 0.01,
+		frictionAir: 0.02,
 		mass: 20
 	});
 	return node;
@@ -54,8 +56,7 @@ function Node(params){
 
 function _node_onFrame(i) {
 	var d = 0;
-	var x = this.phyObj.position.x;
-	var y = this.phyObj.position.y;
+	var x, y;
 	//move
 	if(this.onAnimate){
 		if(this.ele.type == 'circle'){
@@ -66,12 +67,38 @@ function _node_onFrame(i) {
 			x = this.ele.x();
 			y = this.ele.y();
 		}
-		
 		d += Math.abs(this.posX - x) + Math.abs(this.posY - y);
 		this.posX = x;
 		this.posY = y;
 		Physic.setPosition(this.phyObj, {x:x,y:y});
-	}else{
+	}else if(this.status == 'around'){
+		// var v = Matter.Vector.rotateAbout({x:this.posX, y:this.posY}, 0.0002, {x:this.centerNode.posX,y:this.centerNode.posY}) 
+		// x = v.x;
+		// y = v.y;
+
+		// d += Math.abs(this.posX - x) + Math.abs(this.posY - y);
+		// this.posX = x;
+		// this.posY = y;
+		if(this.ele.type == 'circle'){
+			x = this.ele.cx();
+			y = this.ele.cy();
+		}
+		if(this.ele.type == 'text'){
+			x = this.ele.x();
+			y = this.ele.y();
+		}
+		
+		d += Math.abs(this.posX - x) + Math.abs(this.posY - y);
+		Physic.setPosition(this.phyObj, {x:x,y:y});
+		this.ele.center(this.posX, this.posY)
+	}else if(this.status == 'float'){
+		if(i % 25 == 0 & Math.random() > 0.9){
+			var force = 0.1;
+			var fx = force * (Math.random() - 0.5);
+			var fy = force * (Math.random() - 0.5);
+			Physic.applyForce(this.phyObj,{x:fx,y:fy})
+		}
+
 		x = this.phyObj.position.x;
 		y = this.phyObj.position.y;
 		if(this.posX != x || this.posY != y){
@@ -80,16 +107,20 @@ function _node_onFrame(i) {
 			this.posY = y;
 			this.ele.center(this.posX, this.posY)
 		}
-	}
-	if(this.prevNode && (this.prevX != this.prevNode.posX || this.prevY != this.prevNode.posY)){
-		d = d + Math.abs(this.prevNode.posX - this.prevX) + Math.abs(this.prevNode.posY - this.prevY);
-		this.prevX = this.prevNode.posX;
-		this.prevY = this.prevNode.posY;
+	}else if(this.status == 'static'){
+		// this.ele.center(this.posX, this.posY);
+		// d += 1;
 	}
 
-	// if(this.link){
-	// 	this.link.plot(this.posX, this.posY, this.prevNode.posX, this.prevNode.posY);
-	// }
+	var _this = this;
+	this.links.forEach(function(l){
+		var node = l.node;
+		if(l.x != node.posX || l.y != node.posY){
+			l.x = node.posX;
+			l.y = node.posY;
+			l.line.plot(_this.posX, _this.posY, l.node.posX, l.node.posY);
+		}
+	})
 	
 	//update link
 	if(d > 0.1){
@@ -98,55 +129,128 @@ function _node_onFrame(i) {
 }
 
 function _node_displayAs(type) {
-	if(this.displayType == type){
-		return;
+	if(this.displayType != type){
+		this.ele && this.ele.remove();
+		var ele;
+		if(type == 'dot'){
+			ele = draw.circle(5).fill('#aaa').attr('uid',this.uid);
+		}
+		else if(type == 'text'){
+			ele = draw.plain(Model.getText(this.nid)).fill('#666').font({size:12,anchor:'middle'}).attr('uid',this.uid);
+		}else if(type == 'none'){
+			ele = draw.circle(5).fill('#aaa').attr('uid',this.uid);
+			ele.hide();
+		}
+		ele.on('mouseenter',_node_mouseEnter);
+		ele.on('mouseleave',_node_mouseLeave);
+		ele.on('click',_node_mouseClick);
+		this.ele = ele;
 	}
+	this.ele.center(this.posX, this.posY).front();
 	this.displayType = type;
-	this.ele && this.ele.remove();
-	var ele;
-	if(type == 'dot'){
-		ele = draw.circle(5).fill('#aaa').attr('uid',this.uid);
-	}
-	else if(type == 'text'){
-		ele = draw.plain(Model.getText(this.nid)).fill('#666').font({size:14}).attr('uid',this.uid);
-	}else if(type == 'none'){
-		ele = draw.circle(5).fill('#aaa').attr('uid',this.uid);
-		// ele.hide();
-	}
-
-	ele.center(this.posX, this.posY);
-	ele.on('mouseenter',_node_mouseEnter);
-	ele.on('mouseleave',_node_mouseLeave);
-	ele.on('click',_node_mouseClick);
-	this.ele = ele;
 }
 
 function _node_focus() {
-	this.focus = true;
-	this.displayAs('dot');
-	this.moveTo({x:windowWidth * 0.5, y:windowHeight * 0.5})
+	this.moveStatus = 'static';
+	this.posX = centerx;
+	this.posY = centery;
+	Comp.ring.show({x:this.posX,y:this.posY})
+	this.displayAs('text');
+	
 }
 
-function _node_float() {
-	if(!this.phyObj.isStatic){
-		var force = this.onPath ? 0.01 : 0.05;
-		var x = force * (Math.random() - 0.5);
-		var y = force * (Math.random() - 0.5);
-		Physic.applyForce(this.phyObj, {x:x, y:y})
+function _node_unfocus(){
+	this.rangeEle.remove();
+	if(this.temp){
+		this.displayAs('none');
+	}else{
+		this.displayAs('text');
 	}
 }
 
-function _node_setAround(node) {
+function _node_around(node) {
 	this.moveStatus = 'around';
+	this.centerNode = node;
+	var v;
+	if(this.posX == centerx && this.posY == centery){
+		v = Matter.Vector.normalise({x:-1, y:0})
+	}else{
+		v = Matter.Vector.normalise({x:this.posX - centerx, y:this.posY - centery})
+		
+	}
+	var l = 80 + 80 * Math.random();
+	var x = centerx + v.x * l;
+	var y = centery + v.y * l;
+	
+	this.displayAs('text');
+	this.moveTo({x:x, y:y})
 }
 
-function _node_setUnAround(node) {
+function _node_float() {
 	this.moveStatus = 'float';
+	this.centerNode = null;
+	this.displayAs('dot');
+	var l = Matter.Vector.magnitude({x:this.posX - centerx, y:this.posY - centery});
+	if(l < 100){
+		var v = Matter.Vector.normalise({x:this.posX - centerx, y:this.posY - centery})
+		var l = 100 + 50 * Math.random();
+		var x = centerx + v.x * l;
+		var y = centery + v.y * l;
+		this.moveTo({x:x, y:y})
+	}
+}
+
+function _node_linkTo(node){
+	var link = _node_getLinkByUid(this, node.uid);
+	if(!link){
+		link = {
+			node : node,
+			x: node.posX,
+			y: node.posY
+		}
+		link.line = draw.line(this.posX, this.posY, node.posX, node.posY).stroke({ width: 0.2,color: 'red'});
+		this.links.push(link)
+	}
+}
+
+function _node_isLinked(uid){
+	var link = _.find(this.links, function(l){
+		return l.node.uid == uid;
+	})
+	return link ? true : false;
+}
+
+function _node_setText(text){
+	if(this.ele.type == 'text'){
+		this.ele.plain(text);
+	}
+}
+
+function _node_setPos(pos){
+	this.posX = pos.x;
+	this.posY = pos.y;
+	Physic.setPosition(this.phyObj, {x:this.posX,y:this.posY});
+	this.ele.center(this.posX, this.posY)
+}
+
+function _node_setStatus(status){
+	this.status = status;
+	if(status == 'static'){
+
+	}
+}
+
+function _node_getLinkByUid(node, uid){
+	return _.find(node.links, function(l){
+		return l.node.uid == uid;
+	})
 }
 
 function _node_mouseEnter() {
 	var node = Nodes.getNodeByUid(this.attr('uid'));
-    node.displayAs('text');
+	if(!node.onAnimate){
+		node.displayAs('text');
+	}
 }
 
 function _node_mouseLeave() {
@@ -157,7 +261,7 @@ function _node_mouseLeave() {
 }
 
 function _node_mouseClick() {
-	Nodes.clickNode(this.attr('uid'))
+	Nodes.focusNode(this.attr('uid'))
 }
 
 function _node_setStatic(isStatic) {
@@ -168,7 +272,7 @@ function _node_moveTo(pos) {
 	var node = this;
 	this.onAnimate = true;
 	var runner = this.ele.animate({
-	  duration: 1000
+	  duration: 600
 	}).center(pos.x, pos.y);
 	runner.after(function(e){
 		node.onAnimate = false;

@@ -1,7 +1,10 @@
 var Model = {
 	init : _model_init,
 	addNode : _model_add,
+	updateText : _model_updateText,
+	updateLink : _model_updateLink,
 	getText : _model_getText,
+	getNodeByText : _model_getNodeByText,
 	isLinked: _model_isLinked,
 	nodes: []
 }
@@ -29,13 +32,58 @@ function _model_add(text, linkTexts) {
 	linkTexts.forEach(function(t){
 		var n = _model_getNodeByText(t);
 		if(n){
-			$.merge( matched.links, [n.id]);
-			$.merge( n.links, [matched.id]);
+			_model_updateLink(n.id, matched.id, 1, 'notsave');
 		}
 	})
-	localStorage.setItem('nodelist', JSON.stringify(Model.nodes));
+	_model_save();
 	return matched.id;
-	
+}
+
+function _model_updateText(nid, text) {
+	var node = _model_getNodeById(nid);
+	node.t = text;
+	_model_save();
+}
+
+function _model_updateLink(nid1, nid2, dnum, notsave) {
+	var node1 = _model_getNodeById(nid1);
+	var link = _.find(node1.links, function(l){
+		return l.id == nid2
+	})
+	if(!link){
+		link = {
+			id: nid2,
+			n: 0  
+		}
+		node1.links.push(link);
+	}
+	link.n += dnum;
+	if(link.n == 0){
+		node1.links = _.filter(node1.links, function(l){
+			return l.id == link.id
+		})
+	}
+
+	var node2 = _model_getNodeById(nid2);
+	link = _.find(node2.links, function(l){
+		return l.id == nid1
+	})
+	if(!link){
+		link = {
+			id: nid1,
+			n: 0  
+		}
+		node2.links.push(link);
+	}
+	link.n += dnum;
+	if(link.n == 0){
+		node2.links = _.filter(node2.links, function(l){
+			return l.id == link.id
+		})
+	}
+	if(!notsave){
+		_model_save();
+	}
 }
 
 function _model_getNodeByText(t){
@@ -57,8 +105,15 @@ function _model_getText(id) {
 
 function _model_isLinked(nid1, nid2) {
 	var n = _model_getNodeById(nid1);
-	if(n.links.indexOf(nid2) >= 0){
-		return true;
+	if(!n){
+		return false;
 	}
-	return false;
+	var l = _.find(n.links, function(l){
+		return l.id == nid2;
+	})
+	return l ? true : false;
+}
+
+function _model_save(){
+	localStorage.setItem('nodelist', JSON.stringify(Model.nodes));
 }

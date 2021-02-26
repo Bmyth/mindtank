@@ -18,10 +18,12 @@
 
 .board {
 	position: absolute;
-	min-width: 70px; 
-	min-height: 70px; 
+	width: 150px; 
+	height: 150px; 
 	background: #ddd; 
 	border-radius: 100%;
+	top: calc(50% - 75px);
+	left: calc(50% - 75px)
 }
 .board p{
 	position: absolute;

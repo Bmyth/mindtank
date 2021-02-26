@@ -10,7 +10,7 @@ function _entry_init(){
     Entry.ele.focus();
     Entry.ele.on('keyup', _entry_Keyup);
     Entry.ele.on('compositionend', _entry_compositionend);
-    $('body').on('click', _entry_show);
+    $('body').on('click', _entry_click);
 }
 
 function _entry_Keyup(e){
@@ -47,23 +47,11 @@ function _entry_Keyup(e){
 function _entry_compositionend() {
     var val = Entry.ele.val();
     var lastInput = val.substr(-1);
-    var isToggleNode = lastInput == '@';
-    var isRelease = val.indexOf('7') >= 0;
-    if(isToggleNode){
-        Board.update('@');
-        Entry.ele.val('');
-    }else if(isRelease){
-        Entry.ele.val('');
-        Board.release();
-    }else{
-        Board.update(Entry.ele.val());
-    }
+    Nodes.focused && Nodes.focused.updateText(Entry.ele.val());
 }
 
 function _entry_enter() {
-    if(Board.onEdit){
-        Board.enter();
-    }
+    Nodes.enter();
 }
 
 function _entry_esc() {
@@ -71,21 +59,9 @@ function _entry_esc() {
     Board.close();
 }
 
-function _entry_show(e) {
-    if(e.target.tagName == 'svg' && !Board.onEdit){
+function _entry_click(e) {
+    if(e.target.tagName == 'svg'){
         Entry.ele.val('').focus();
-        Board.show();
+        Nodes.focusNode('temp');
     }
-}
-
-function _entry_direction(direction, shiftKey) {
-	// var step = 40;
-	// var mode = shiftKey ? 'Parallel' : 'Serial';
-	// if(entry.val()){
-	// 	Nodes.createNode({direction:direction, mode:mode});
-	// }else{
-	// 	var dx = DirectionConfig[direction].iX * step;
-	// 	var dy = DirectionConfig[direction].iY * step;
-	// 	tempNode && tempNode.adjustPos({x:dx, y:dy});
-	// }
 }

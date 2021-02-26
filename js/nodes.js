@@ -6,11 +6,12 @@ var Nodes = {
 	ele: null,
 	frame: null,
 	iClock: 0,
-	focusedNode: null, 
+	focused: null, 
+	tempNode: null,
 	init: _nodes_init,
-	addNode: _nodes_addNode,
-	clickNode: _nodes_clickNode,
+	nextNode: _nodes_nextNode,
 	focusNode: _nodes_focusNode,
+	enter: _nodes_enter,
 	releaseNodes: _nodes_releaseNodes,
 	getLinkByNid: _nodes_getLinkByNid,
 	getNodeByUid: _nodes_getNodeByUid,
@@ -29,23 +30,126 @@ function _nodes_init() {
     	Nodes.items.push(node);
     })
 
-    Model.nodes.forEach(function(n) {
+    Nodes.tempNode = new Node({
+		temp: true
+	});
+	Nodes.items.push(Nodes.tempNode);
+
+    _nodes_updateLinks();
+
+    setInterval(_nodes_onFrame, 40)
+}
+
+function _nodes_nextNode(type, pos){
+	var tempNode = Nodes.tempNode;
+	if(type == 'serial'){
+
+	}
+	if(type == 'parallel'){
+		tempNode.setPos(pos);
+		tempNode.displayAs('text');
+		tempNode.setText('_');
+		tempNode.setStatus('static');
+		Entry.ele.val('').focus();
+	}
+}
+
+function _nodes_focusNode(uid){
+	var node = _nodes_getNodeByUid(uid);
+	Entry.ele.val(Model.getText(node.nid)).focus();
+	var prevNode = Nodes.focused;
+	if(prevNode){
+		prevNode.unfocus();
+	}
+	Nodes.focused = node;
+	node.displayAs('text');
+	node.moveTo(centerPoint)
+	Comp.ring.show(centerPoint)
+
+	if(prevNode){
+		node.linkTo(prevNode);
+		if(!node.temp){
+			Model.updateLink(node.nid, prevNode.nid, 1);
+		}
+	}
+
+	Nodes.items.forEach(function(n){
+		if(n.uid == uid || n.temp){
+
+		}else if(Model.isLinked(node.nid, n.nid) || node.isLinked(n.uid)){
+			n.around(node);
+		}else{
+			n.float();
+		}
+	})
+}
+
+function _nodes_enter(text){
+	var text = Entry.ele.val().replace(/^\s+|\s+$/g,'');
+	if(Nodes.focused && !Nodes.focused.temp){
+		var n = Model.getNodeByText(text);
+		if(n && n.id != Nodes.focused.nid){
+
+		}else{
+			Model.updateText(Nodes.focused.nid, text);
+			Nodes.focused.updateText(text);
+			Nodes.focused.unfocus();
+		} 
+	}else if(Nodes.focused && Nodes.focused.temp){
+		var linkTexts = _.map(Nodes.focused.links, function(l){
+			return Model.getText(l.node.nid)
+		})
+		var nid = Model.addNode(text,linkTexts);
+		var n = _nodes_getNodeByNid(nid);
+		if(!n){
+			n = new Node({
+				nid: nid
+			});
+			Nodes.items.push(n);
+			_nodes_updateLinks();
+		}
+		Nodes.focused.unfocus();
+	}
+}
+
+function _nodes_releaseNodes() {
+	
+}
+
+function _nodes_getNodeByUid(uid) {
+	return _.find(Nodes.items, function(n){
+		return n.uid == uid;
+	})
+}
+
+function _nodes_getNodeByNid(nid) {
+	return _.find(Nodes.items, function(n){
+		return n.nid == nid;
+	})
+}
+
+function _nodes_getLinkByNid(fromNid, toNid) {
+	return _.find(Nodes.links, function(l){
+		return l.fromNid == fromNid && l.toNid == toNid;
+	})
+}
+
+function _nodes_updateLinks(){
+	Model.nodes.forEach(function(n) {
     	var node = _nodes_getNodeByNid(n.id);
     	n.links.forEach(function(l) {
-    		var lnode = _nodes_getNodeByNid(l);
-    		var link = _nodes_getLinkByNid(n.id, l)
+    		var lnode = _nodes_getNodeByNid(l.id);
+    		var link = _nodes_getLinkByNid(n.id, l.id)
     		if(!link){
     			link = draw.line(node.posX, node.posY, lnode.posX, lnode.posY).stroke({ width: 0.1,color: '#aaa'});
 				link.fromNid = n.id;
 				link.fromUid = node.uid;
-				link.toNid = l;
+				link.toNid = l.id;
 				link.toUid = lnode.uid;
 				Nodes.links.push(link);
     		}
     	})
     })
-
-    setInterval(_nodes_onFrame, 40)
 }
 
 function _nodes_onFrame() {
@@ -68,77 +172,4 @@ function _nodes_onFrame() {
 	if(Nodes.iClock == 2500){
 		Nodes.iClock = 0;
 	}
-}
-
-function _nodes_addNode(text) {
-	var node = _nodes_getNodeByNid()
-	var nid = Model.addNode(text);
-	var node = _nodes_getNodeByNid(nid);
-	if(!node){
-		node = new Node({
-			nid: nid
-		});
-	}
-	node.setStatus('text');
-	Nodes.items.push(node);
-	Nodes.focusNode(node.uid);
-}
-
-function _nodes_clickNode(uid) {
-	// _nodes_focusNode(uid);
-	Board.editNode(uid);
-	var node = _nodes_getNodeByUid(uid);
-	node.focus();
-
-	// Nodes.items.forEach(function(n){
-	// 	if(Model.isLinked(node.nid, n.nid)){
-	// 		n.around(node);
-	// 	}else{
-	// 		n.away(node);
-	// 	}
-	// })
-}
-
-function _nodes_focusNode(uid) {
-	var node = _nodes_getFocusNode();
-	if(node.uid != uid){
-		node.unfocus();
-	}
-	node = _nodes_getNodeByUid(uid);
-	node.focus();
-}
-
-function _nodes_releaseNodes() {
-	Nodes.path.forEach(function(n){
-		if(n.onPath && n.phyObj.isStatic){
-			var ele = Board.getNodeEle(n.uid);
-			if(!ele){
-				n.release();
-			}
-		}
-	})
-}
-
-function _nodes_getNodeByUid(uid) {
-	return _.find(Nodes.items, function(n){
-		return n.uid == uid;
-	})
-}
-
-function _nodes_getNodeByNid(nid) {
-	return _.find(Nodes.items, function(n){
-		return n.nid == nid;
-	})
-}
-
-function _nodes_getLinkByNid(fromNid, toNid) {
-	return _.find(Nodes.links, function(l){
-		return l.fromNid == fromNid && l.toNid == toNid;
-	})
-}
-
-function _nodes_getFocusNode() {
-	return _.find(Nodes.items, function(n){
-		return n.focus;
-	})
 }
