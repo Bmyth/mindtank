@@ -1,114 +1,118 @@
 var Nodes = {
 	nodeIndex: 0,
 	items: [],
-	links: [],
-	updatingUids: [],
 	ele: null,
-	frame: null,
 	iClock: 0,
-	focused: null, 
-	tempNode: null,
+	nFocus: null, 
+	nEdit: null,
 	init: _nodes_init,
-	nextNode: _nodes_nextNode,
-	focusNode: _nodes_focusNode,
-	enter: _nodes_enter,
-	releaseNodes: _nodes_releaseNodes,
-	getLinkByNid: _nodes_getLinkByNid,
-	getNodeByUid: _nodes_getNodeByUid,
-	getNodeByNid: _nodes_getNodeByNid
-	
+	handleNodeNext: _nodes_nodeNext,
+	handleNodeEnter: _nodes_nodeEnter,
+	getNodeByNid: _nodes_getNodeByNid,
+	getTempNode: _nodes_getTempNode
 }
 
 function _nodes_init() {
 	Nodes.ele = $('#svgpaper');
-	Nodes.map = $('#map');
 
     Model.nodes.forEach(function(n) {
     	var node = new Node({
-    		nid: n.id
+    		nid: n.id,
+    		prev: n.prev,
+    		next: n.next
     	});
     	Nodes.items.push(node);
     })
 
-    Nodes.tempNode = new Node({
-		temp: true
-	});
-	Nodes.items.push(Nodes.tempNode);
-
-    _nodes_updateLinks();
+    Nodes.items.forEach(function(n){
+    	n.initLinks();
+    })
 
     setInterval(_nodes_onFrame, 40)
 }
 
-function _nodes_nextNode(type, pos){
-	var tempNode = Nodes.tempNode;
+function _nodes_nodeNext(type, param){
+	if(type == 'point'){
+		var tempNode = _nodes_getTempNode();
+		if(!tempNode){
+			tempNode = new Node({
+				x: param.x,
+				y: param.y,
+				status: 'static',
+				displayAs: 'text'
+			})
+			Nodes.items.push(tempNode);
+		}
+		_nodes_focusNode(tempNode.nid)
+	}
+	if(type == 'node'){
+		_nodes_focusNode(param)
+	}
 	if(type == 'serial'){
 
 	}
-	if(type == 'parallel'){
-		tempNode.setPos(pos);
-		tempNode.displayAs('text');
-		tempNode.setText('_');
-		tempNode.setStatus('static');
+	if(type == 'around'){
 		Entry.ele.val('').focus();
+		var tempNode = _nodes_getTempNode();
+		if(!tempNode){
+			tempNode = new Node({
+				x: param.x,
+				y: param.y,
+				status: 'static',
+				displayAs: 'text'
+			})
+			Nodes.items.push(tempNode);
+		}
+		Nodes.nEdit = tempNode;
+		Nodes.nFocus.linkTo(tempNode);
+		tempNode.moveTo(param);
 	}
 }
 
-function _nodes_focusNode(uid){
-	var node = _nodes_getNodeByUid(uid);
+function _nodes_focusNode(nid){
+	var node = _nodes_getNodeByNid(nid);
 	Entry.ele.val(Model.getText(node.nid)).focus();
-	var prevNode = Nodes.focused;
-	if(prevNode){
-		prevNode.unfocus();
-	}
-	Nodes.focused = node;
+	var prevNode = Nodes.nFocus;
+
+	Nodes.nFocus = node;
+	Nodes.nEdit = node;
+	node.setStatus('static');
 	node.displayAs('text');
 	node.moveTo(centerPoint)
 	Comp.ring.show(centerPoint)
 
-	if(prevNode){
-		node.linkTo(prevNode);
-		if(!node.temp){
-			Model.updateLink(node.nid, prevNode.nid, 1);
-		}
-	}
+	// if(prevNode){
+	// 	node.linkTo(prevNode);
+	// 	if(!node.temp){
+	// 		Model.updateLink(node.nid, prevNode.nid, 1);
+	// 	}
+	// }
 
 	Nodes.items.forEach(function(n){
-		if(n.uid == uid || n.temp){
+		if(n.nid == nid){
 
-		}else if(Model.isLinked(node.nid, n.nid) || node.isLinked(n.uid)){
-			n.around(node);
+		}else if(n.isLinked(node.nid)){
+			n.setStatus('around', node);
 		}else{
-			n.float();
+			n.setStatus('float');
 		}
 	})
 }
 
-function _nodes_enter(text){
+function _nodes_nodeEnter(text){
 	var text = Entry.ele.val().replace(/^\s+|\s+$/g,'');
-	if(Nodes.focused && !Nodes.focused.temp){
+	if(Nodes.nEdit && Nodes.nEdit.nid){
 		var n = Model.getNodeByText(text);
-		if(n && n.id != Nodes.focused.nid){
-
+		if(n && n.id != Nodes.nEdit.nid){
+			//merge
 		}else{
-			Model.updateText(Nodes.focused.nid, text);
-			Nodes.focused.updateText(text);
-			Nodes.focused.unfocus();
+			Model.updateText(Nodes.nEdit.nid, text);
+			Nodes.nEdit.setText(text);
 		} 
-	}else if(Nodes.focused && Nodes.focused.temp){
-		var linkTexts = _.map(Nodes.focused.links, function(l){
-			return Model.getText(l.node.nid)
-		})
-		var nid = Model.addNode(text,linkTexts);
-		var n = _nodes_getNodeByNid(nid);
-		if(!n){
-			n = new Node({
-				nid: nid
-			});
-			Nodes.items.push(n);
-			_nodes_updateLinks();
-		}
-		Nodes.focused.unfocus();
+	}else if(Nodes.nEdit && !Nodes.nEdit.nid){
+		var linkInfo = Nodes.nEdit.getLinkInfo();
+		var nid = Model.addNode(text,linkInfo);
+		Nodes.nEdit.nid = nid;
 	}
 }
 
@@ -134,22 +138,10 @@ function _nodes_getLinkByNid(fromNid, toNid) {
 	})
 }
 
-function _nodes_updateLinks(){
-	Model.nodes.forEach(function(n) {
-    	var node = _nodes_getNodeByNid(n.id);
-    	n.links.forEach(function(l) {
-    		var lnode = _nodes_getNodeByNid(l.id);
-    		var link = _nodes_getLinkByNid(n.id, l.id)
-    		if(!link){
-    			link = draw.line(node.posX, node.posY, lnode.posX, lnode.posY).stroke({ width: 0.1,color: '#aaa'});
-				link.fromNid = n.id;
-				link.fromUid = node.uid;
-				link.toNid = l.id;
-				link.toUid = lnode.uid;
-				Nodes.links.push(link);
-    		}
-    	})
-    })
+function _nodes_getTempNode(){
+	return _.find(Nodes.items, function(n){
+		return n.nid == null;
+	})
 }
 
 function _nodes_onFrame() {
@@ -157,17 +149,18 @@ function _nodes_onFrame() {
 	Nodes.items.forEach(function(n){
 		n.onFrame(Nodes.iClock);
 	})
-	Nodes.updatingUids = _.uniq(Nodes.updatingUids);
-	Nodes.links.forEach(function(l) {
-		var f = _.find(Nodes.updatingUids, function(n) {
-			return n == l.fromUid || n == l.toUid;
-		})
-		if(f){
-			var fromNode = _nodes_getNodeByUid(l.fromUid);
-			var toNode = _nodes_getNodeByUid(l.toUid);
-			l.plot(fromNode.posX, fromNode.posY, toNode.posX, toNode.posY);
-		}
-	})
+	// Nodes.updatingUids = _.uniq(Nodes.updatingUids);
+	// Nodes.links.forEach(function(l) {
+	// 	var f = _.find(Nodes.updatingUids, function(n) {
+	// 		return n == l.fromUid || n == l.toUid;
+	// 	})
+	// 	if(f){
+	// 		var fromNode = _nodes_getNodeByUid(l.fromUid);
+	// 		var toNode = _nodes_getNodeByUid(l.toUid);
+	// 		console.log(fromNode.prevPos,toNode.prevPos)
+	// 		l.plot(fromNode.prevPos.x, fromNode.prevPos.y, toNode.prevPos.x, toNode.prevPos.y);
+	// 	}
+	// })
 	Nodes.iClock++;
 	if(Nodes.iClock == 2500){
 		Nodes.iClock = 0;

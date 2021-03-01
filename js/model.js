@@ -5,7 +5,6 @@ var Model = {
 	updateLink : _model_updateLink,
 	getText : _model_getText,
 	getNodeByText : _model_getNodeByText,
-	isLinked: _model_isLinked,
 	nodes: []
 }
 
@@ -17,26 +16,57 @@ function _model_init() {
 	Model.nodes = nodes || [];
 }
 
-function _model_add(text, linkTexts) {
-	linkTexts = linkTexts || []
+function _model_add(text, linkInfo) {
 	var matched = _model_getNodeByText(text);
 	if(!matched){
 		var id = (new Date()).valueOf();
 		matched = {
 			id : id,
 			t: text,
-			links: []
+			next: linkInfo.next,
+			prev: linkInfo.prev
 		}
 		Model.nodes.push(matched);
 	}
-	linkTexts.forEach(function(t){
-		var n = _model_getNodeByText(t);
-		if(n){
-			_model_updateLink(n.id, matched.id, 1, 'notsave');
-		}
-	})
+	_model_syncLinks(matched);
 	_model_save();
 	return matched.id;
+}
+
+function _model_syncLinks(node){
+	node.next.forEach(function(t){
+		var n = _model_getNodeById(t.id);
+		if(n){
+			var l = n.prev.find(function(p){
+				return p.id == node.id
+			})
+			if(!l){
+				l = {
+					id : node.id,
+					w : 0
+				}
+				n.prev.push(l);
+			}
+			l.w = t.w || 1;
+		}
+	})
+
+	node.prev.forEach(function(t){
+		var n = _model_getNodeById(t.id);
+		if(n){
+			var l = n.next.find(function(p){
+				return p.id == node.id
+			})
+			if(!l){
+				l = {
+					id : node.id,
+					w : 0
+				}
+				n.next.push(l);
+			}
+			l.w = t.w || 1;
+		}
+	})
 }
 
 function _model_updateText(nid, text) {
@@ -101,17 +131,6 @@ function _model_getNodeById(id){
 function _model_getText(id) {
 	var node = _model_getNodeById(id);
 	return node ? node.t : '';
-}
-
-function _model_isLinked(nid1, nid2) {
-	var n = _model_getNodeById(nid1);
-	if(!n){
-		return false;
-	}
-	var l = _.find(n.links, function(l){
-		return l.id == nid2;
-	})
-	return l ? true : false;
 }
 
 function _model_save(){

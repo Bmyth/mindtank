@@ -46,12 +46,12 @@ function _entry_Keyup(e){
 
 function _entry_compositionend() {
     var val = Entry.ele.val();
-    var lastInput = val.substr(-1);
-    Nodes.focused && Nodes.focused.updateText(Entry.ele.val());
+    // var lastInput = val.substr(-1);
+    Nodes.nEdit && Nodes.nEdit.setText(val);
 }
 
 function _entry_enter() {
-    Nodes.enter();
+    Nodes.handleNodeEnter();
 }
 
 function _entry_esc() {
@@ -61,7 +61,6 @@ function _entry_esc() {
 
 function _entry_click(e) {
     if(e.target.tagName == 'svg'){
-        Entry.ele.val('').focus();
-        Nodes.focusNode('temp');
+        Nodes.handleNodeNext('point', {x:e.clientX, y:e.clientY});
     }
 }
