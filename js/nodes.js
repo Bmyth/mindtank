@@ -33,63 +33,37 @@ function _nodes_init() {
 
 function _nodes_nodeNext(type, param){
 	if(type == 'point'){
-		var tempNode = _nodes_getTempNode();
-		if(!tempNode){
-			tempNode = new Node({
-				x: param.x,
-				y: param.y,
-				status: 'static',
-				displayAs: 'text'
-			})
-			Nodes.items.push(tempNode);
-		}
-		_nodes_focusNode(tempNode.nid)
+		var tempNode = _nodes_getTempNode(param);
+		_nodes_focusNode(tempNode)
+		_nodes_editNode(tempNode)
 	}
 	if(type == 'node'){
-		_nodes_focusNode(param)
+		var node =  _nodes_getNodeByNid(param);
+		_nodes_focusNode(node)
+		_nodes_editNode(node)
 	}
 	if(type == 'serial'){
-
+		var tempNode = _nodes_getTempNode(param);
+		Nodes.nFocus.linkTo(tempNode);
+		_nodes_focusNode(tempNode)
+		_nodes_editNode(tempNode)
 	}
 	if(type == 'around'){
-		Entry.ele.val('').focus();
-		var tempNode = _nodes_getTempNode();
-		if(!tempNode){
-			tempNode = new Node({
-				x: param.x,
-				y: param.y,
-				status: 'static',
-				displayAs: 'text'
-			})
-			Nodes.items.push(tempNode);
-		}
-		Nodes.nEdit = tempNode;
+		var tempNode = _nodes_getTempNode(param);
+		_nodes_editNode(tempNode)
 		Nodes.nFocus.linkTo(tempNode);
 		tempNode.moveTo(param);
 	}
 }
 
-function _nodes_focusNode(nid){
-	var node = _nodes_getNodeByNid(nid);
-	Entry.ele.val(Model.getText(node.nid)).focus();
-	var prevNode = Nodes.nFocus;
-
+function _nodes_focusNode(node){	
 	Nodes.nFocus = node;
-	Nodes.nEdit = node;
 	node.setStatus('static');
-	node.displayAs('text');
 	node.moveTo(centerPoint)
 	Comp.ring.show(centerPoint)
 
-	// if(prevNode){
-	// 	node.linkTo(prevNode);
-	// 	if(!node.temp){
-	// 		Model.updateLink(node.nid, prevNode.nid, 1);
-	// 	}
-	// }
-
 	Nodes.items.forEach(function(n){
-		if(n.nid == nid){
+		if(n.nid == node.nid){
 
 		}else if(n.isLinked(node.nid)){
 			n.setStatus('around', node);
@@ -97,6 +71,12 @@ function _nodes_focusNode(nid){
 			n.setStatus('float');
 		}
 	})
+}
+
+function _nodes_editNode(node){
+	Nodes.nEdit = node;
+	Entry.ele.val(Model.getText(node.nid)).focus();
+	node.displayAs('text');
 }
 
 function _nodes_nodeEnter(text){
@@ -120,6 +100,7 @@ function _nodes_releaseNodes() {
 	
 }
 
+
 function _nodes_getNodeByUid(uid) {
 	return _.find(Nodes.items, function(n){
 		return n.uid == uid;
@@ -138,10 +119,21 @@ function _nodes_getLinkByNid(fromNid, toNid) {
 	})
 }
 
-function _nodes_getTempNode(){
-	return _.find(Nodes.items, function(n){
+function _nodes_getTempNode(params){
+	params = params || {}
+	var temp =  _.find(Nodes.items, function(n){
 		return n.nid == null;
 	})
+	if(!temp){
+		temp = new Node({
+			x: params.x || 0,
+			y: params.y || 0,
+			status: 'static',
+			displayAs: 'text'
+		})
+		Nodes.items.push(temp);
+	}
+	return temp;
 }
 
 function _nodes_onFrame() {
