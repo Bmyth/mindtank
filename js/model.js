@@ -3,8 +3,11 @@ var Model = {
 	addNode : _model_add,
 	updateText : _model_updateText,
 	updateLink : _model_updateLink,
+	updateNode : _model_updateNode,
+	deleteNode : _model_deleteNode,
 	getText : _model_getText,
 	getNodeByText : _model_getNodeByText,
+	save : _model_save,
 	nodes: []
 }
 
@@ -114,6 +117,37 @@ function _model_updateLink(nid1, nid2, dnum, notsave) {
 	if(!notsave){
 		_model_save();
 	}
+}
+
+function _model_updateNode(_node, notsave){
+	var node = _model_getNodeById(node.id);
+	if(_node.t){
+		node.t = _node.t;
+	}
+	if(_node.next){
+		node.next = _node.next;
+	}
+	if(_node.prev){
+		node.prev = _node.prev;
+	}
+	if(!notsave){
+		_model_save();
+	}
+}
+
+function _model_deleteNode(id){
+	Model.nodes = _.filter(Model.nodes, function(n){
+		return n.id != id;
+	})
+	Model.nodes.forEach(function(n){
+		n.next = _.filter(n.next, function(l){
+			return l.id != id;
+		})
+		n.prev = _.filter(n.prev, function(l){
+			return l.id != id;
+		})
+	})
+	_model_save();
 }
 
 function _model_getNodeByText(t){

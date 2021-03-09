@@ -8,16 +8,21 @@ function BaseNode(params){
 	this.linkNexts = params.next || [];
 	this.linkPrevs = params.prev || [];
 	this.links = [];
+	this.radius = 15;
 	this.phyObj = Physic.addCircle({
 		x: params.x,
 		y: params.y,
-		r: 12,
+		r: this.radius,
 		isStatic: false,
 		frictionAir: 0.02,
 		mass: 20
 	});
-	this.prevPos = {x:params.x,y:params.y}
-
+	this.shape = draw.circle(this.radius).opacity(0).center(params.x, params.y);
+	this.shape.attr('nid',this.nid);
+	this.shape.on('mouseenter',_node_mouseEnter);
+	this._pos = {x:params.x,y:params.y}
+	this.tempClock = 0;
+	this.keepTempStatusTime = 25;
 	this.onFrame = _node_onFrame;
 	this.drawLink = _node_drawLink;
 	this.initLinks = _node_initLinks;
@@ -26,12 +31,19 @@ function BaseNode(params){
 	this.linkTo = _node_linkTo;
 	this.isLinked = _node_isLinked;
 	this.updatePrevLink = _node_updatePrevLink;
+	this.setNid = _node_setNid;
 	this.setText = _node_setText;
 	this.setPos = _node_setPos;
 	this.getPos = _node_getPos;
+	this.moveTo = _node_moveTo;
 	this.setStatus = _node_setStatus;
 	this.displayAs = _node_displayAs;
-	this.moveTo = _node_moveTo;
+	this.setOpacity = _node_setOpacity;
+	this.setStatic = _node_setStatic;
+	this.remove = _node_remove;
+	this.updateDistanceByText = _node_updateDistanceByText;
+	this.updateDisplayByScope = _node_updateDisplayByScope;
+	this.removeLinkOfNode = _node_removeLinkOfNode;
 }
 
 function Node(params){
@@ -39,7 +51,7 @@ function Node(params){
 	params.y = params.y || windowHeight * Math.random();
 	
 	var node = new BaseNode(params);
-	var displayAs = params.displayAs || 'dot';
+	var displayAs = params.displayAs || 'text';
 	node.displayAs(displayAs);
 	node.setPos(params.x,params.y)
 	
@@ -49,21 +61,18 @@ function Node(params){
 }
 
 function _node_onFrame(i) {
-	var d = 0;
-	var x, y;
-	var pos = this.getPos();
-	//move
+	var x = this.shape.cx();
+	var y = this.shape.cy();
+
 	if(this.onAnimate){
-		Physic.setPosition(this.phyObj, {x:pos.x,y:pos.y});
+
 	}else if(this.animateDone){
-		Physic.setPosition(this.phyObj, {x:pos.x,y:pos.y});
 		this.needUpdate = true;
 		this.animateDone = false;
+		Physic.setPosition(this.phyObj, {x:x,y:y});
 	}
 	else if(this.status == 'around'){
-		// var v = Matter.Vector.rotateAbout({x:this.posX, y:this.posY}, 0.0002, {x:this.centerNode.posX,y:this.centerNode.posY}) 
-		// x = v.x;
-		// y = v.y;
+
 	}else if(this.status == 'float'){
 		if(i % 25 == 0 & Math.random() > 0.9){
 			var force = 0.1;
@@ -71,20 +80,26 @@ function _node_onFrame(i) {
 			var fy = force * (Math.random() - 0.5);
 			Physic.applyForce(this.phyObj,{x:fx,y:fy})
 		}
-
-		pos.x = this.phyObj.position.x;
-		pos.y = this.phyObj.position.y;
-		this.ele.center(pos.x, pos.y)
+		x = this.phyObj.position.x;
+		y = this.phyObj.position.y;
+		this.shape.center(x, y)
 	}else if(this.status == 'static'){
 
 	}
 
-	var posDiff = Math.abs(pos.x - this.prevPos.x) + Math.abs(pos.y - this.prevPos.y);
-	this.prevPos.x = pos.x;
-	this.prevPos.y = pos.y;
+	//sync pos
+	var posDiff = Math.abs(x - this._pos.x) + Math.abs(y - this._pos.y);
+	if(posDiff > 0){
+		this.ele.center(x, y);
+		if(this.status != 'float'){
+			Physic.setPosition(this.phyObj, {x:x,y:y});
+		}
+	}
+	this._pos.x = x;
+	this._pos.y = y;
 	
 	//update link
-	if(posDiff > 0.1 || this.needUpdate){
+	if(posDiff > 0.25 || this.needUpdate){
 		this.needUpdate = false;
 		var _this = this;
 		this.links.forEach(function(l){
@@ -95,6 +110,13 @@ function _node_onFrame(i) {
 			node.drawLink(_this, 0);
 		})
 	}
+
+	// if(this.tempClock > 0){
+	// 	this.tempClock--;
+	// 	if(this.tempClock == 0 && this.displayType == 'tempText'){
+	// 		this.displayAs('dot');
+	// 	}
+	// }
 }
 
 function _node_initLinks(){
@@ -114,13 +136,13 @@ function _node_drawLink(node, increase, link){
 	if(!link){
 		link = draw.line(pos.x, pos.y, pos2.x, pos2.y).stroke({ width: 0.1,color: '#333'});
 		link.nextNode = node;
-		link.w = 0;
+		link.w = 1;
 		this.links.push(link)
 	}else{
 		link.plot(pos.x, pos.y, pos2.x, pos2.y);
-	}
-	if(increase){
-		link.w += increase;
+		if(increase){
+			link.w += increase;
+		}
 	}
 }
 
@@ -131,11 +153,11 @@ function _node_updatePrevLink(prevNode, increase){
 	if(!link){
 		link = {
 			id : prevNode.nid,
-			w : 0
+			w : 1
 		}
 		this.linkPrevs.push(link)
 	}
-	if(increase){
+	else if(increase){
 		link.w += increase;
 	}
 }
@@ -158,8 +180,8 @@ function _node_getLink(nid){
 }
 
 function _node_linkTo(node){
-	this.drawLink(node, 1);
-	node.updatePrevLink(this, 1)
+	this.drawLink(node, 0);
+	node.updatePrevLink(this, 0)
 }
 
 function _node_isLinked(nid){
@@ -188,15 +210,20 @@ function _node_setPos(x,y){
 }	
 
 function _node_getPos(){
+	return {x:this.shape.cx(),y:this.shape.cy()}
+}
+
+function _node_getElePos(){
 	var x,y;
 	if(!this.ele){
-		return null;
+		x = this.shape.cx();
+		y = this.shape.cy();
 	}
-	if(this.ele.type == 'circle'){
+	else if(this.ele.type == 'circle'){
 		x = this.ele.cx();
 		y = this.ele.cy();
 	}
-	if(this.ele.type == 'text'){
+	else if(this.ele.type == 'text'){
 		x = this.ele.attr('x');
 		y = this.ele.attr('y');
 	}
@@ -204,35 +231,35 @@ function _node_getPos(){
 }
 
 function _node_displayAs(type) {
+	var text = this.nid ? Model.getText(this.nid) : Entry.ele.val();
 	if(this.displayType != type){
 		this.displayType = type;
 		this.ele && this.ele.remove();
 		var ele;
 		if(type == 'dot'){
 			ele = draw.circle(5).fill('#aaa');
-		}
-		else if(type == 'text'){
+		}else if(type == 'text'){
 			ele = draw.plain(text).fill('#666').font({size:12,anchor:'middle'});
+			ele.on('mouseleave',_node_mouseLeave);
+			ele.on('click',_node_mouseClick);
+		}else if(type == 'tempText'){
+			ele = draw.plain(text).fill('#666').font({size:12,anchor:'middle'});
+			this.tempClock = this.keepTempStatusTime;
 		}else if(type == 'none'){
 			ele = draw.circle(5).fill('#aaa');
 			ele.hide();
 		}
 		ele.attr('nid',this.nid);
-		ele.on('mouseenter',_node_mouseEnter);
-		ele.on('mouseleave',_node_mouseLeave);
-		ele.on('click',_node_mouseClick);
 		this.ele = ele;
+		this.ele.center(this.shape.cx(), this.shape.cy()).front();
 	}
-	if(this.displayType == 'text'){
-		var text = (!!this.nid ? Model.getText(this.nid) : Entry.ele.val()) || '_';	
-		this.ele.plain(text)
+	if(this.displayType == 'text' || this.displayType == 'tempText'){
+		this.setText(text)
 	}
-	this.ele.center(this.prevPos.x, this.prevPos.y).front();
 }
 
 function _node_setText(text){
 	if(this.ele.type == 'text'){
-		var text = (this.nid ? text : Entry.ele.val()) || '_';
 		this.ele.plain(text);
 	}
 }
@@ -268,27 +295,31 @@ function _node_setStatus(status, params){
 		
 		this.displayAs('text');
 		this.moveTo({x:x, y:y})
+		this.setStatic(true)
 	}
 }
 
-function _node_getLinkByUid(node, uid){
-	return _.find(node.links, function(l){
-		return l.node.uid == uid;
-	})
+function _node_setOpacity(opacity){
+	this.ele.opacity(opacity)
 }
 
-function _node_mouseEnter() {
+function setStatic(static){
+	Physic.setStatic(this.phyObj, static);
+}
+
+function _node_mouseEnter(e) {
 	var node = Nodes.getNodeByNid(this.attr('nid'));
 	if(!node.onAnimate){
 		node.displayAs('text');
 	}
 }
 
-function _node_mouseLeave() {
-	// var node = Nodes.getNodeByUid(this.attr('uid'));
-	// if(!node.onPath){
-	// 	node.setStatus('dot');
-	// }
+function _node_mouseLeave(e) {
+	var node = Nodes.getNodeByNid(this.attr('nid'));
+	if(node.status == 'float'){
+		node.displayAs('dot');
+	}
+	return false;
 }
 
 function _node_mouseClick() {
@@ -299,16 +330,77 @@ function _node_setStatic(isStatic) {
 	Physic.setStatic(this.phyObj, isStatic)
 }
 
-function _node_moveTo(pos) {
+function _node_updateDistanceByText(node){
+	var text1 = this.getText();
+	var text2 = node.getText();
+	var matched = text1.indexOf(text2) >= 0 || text2.indexOf(text1) >= 0;
+	if(matched){
+		this.displayAs('text');
+	}else{
+		this.displayAs('dot');
+	}
+}
+
+function _node_updateDisplayByScope(){
+	if(this.tempClock > 0){
+		return;
+	}
+	if(!Comp.scope.visible && this.displayType == 'tempText'){
+		this.displayAs('dot')
+		return;
+	}
+	var isInside = Comp.scope.inside(this.getPos());
+	if(isInside && this.displayType == 'dot'){
+		this.displayAs('tempText')
+	}
+	else if(!isInside && this.displayType == 'tempText'){
+		this.displayAs('dot')
+	}
+}
+
+function _node_removeLinkOfNode(nid){
+	var n = {};
+	var len = this.links.length;
+	this.links = _.filter(this.links, function(l){
+		if(l.nextNode.nid == nid){
+			l.remove();
+			l.nextNode = null;
+			return false;
+		}else{
+			return true;
+		}
+	})
+	this.linkPrevs = _.filter(this.linkPrevs, function(l){
+		return l.id != nid;
+	})
+}
+
+function _node_remove(){
+	this.ele.remove();
+	this.links.forEach(function(l){
+		l.nextNode = null;
+		l.remove();
+	})
+	Physic.deleteObject(this.phyObj);
+}
+
+function _node_moveTo(pos, duration, callback) {
 	var node = this;
 	this.onAnimate = true;
-	var runner = this.ele.animate({
-	  duration: 600
+	duration = duration || 400;
+	var runner = this.shape.animate({
+	  duration: duration
 	}).center(pos.x, pos.y);
 	runner.after(function(e){
 		node.onAnimate = false;
 		node.animateDone = true;
+		callback && callback(node);
 	})
+}
+
+function _node_setNid(nid){
+	this.nid = nid;
+	this.ele.attr('nid', nid);
 }
 
 function generateUid(){

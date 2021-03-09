@@ -7,9 +7,13 @@ var Nodes = {
 	nEdit: null,
 	init: _nodes_init,
 	handleNodeNext: _nodes_nodeNext,
+	handleNodeTextUpdate: _nodes_nodeTextUpdate,
 	handleNodeEnter: _nodes_nodeEnter,
+	handleEsc: _nodes_handleEsc,
+	handleNodeDelete: _nodes_nodeDelete,
 	getNodeByNid: _nodes_getNodeByNid,
-	getTempNode: _nodes_getTempNode
+	getTempNode: _nodes_getTempNode,
+	updateScope: _nodes_updateScope
 }
 
 function _nodes_init() {
@@ -32,78 +36,149 @@ function _nodes_init() {
 }
 
 function _nodes_nodeNext(type, param){
+	Entry.hide();
+	if(Nodes.nEdit){
+        Nodes.nEdit.setOpacity(1);
+        Nodes.nEdit = null;
+    }
+	var tempNode = _nodes_getTempNode();
 	if(type == 'point'){
-		var tempNode = _nodes_getTempNode(param);
-		_nodes_focusNode(tempNode)
-		_nodes_editNode(tempNode)
+		tempNode = tempNode || _nodes_generateTempNode(param);
+		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
 	}
 	if(type == 'node'){
-		var node =  _nodes_getNodeByNid(param);
-		_nodes_focusNode(node)
-		_nodes_editNode(node)
+		if(tempNode){
+			_nodes_nodeDelete(tempNode.nid);
+		}
+		var node = _nodes_getNodeByNid(param);
+		_nodes_nodeFocus(node, _nodes_nodeEdit)
 	}
 	if(type == 'serial'){
-		var tempNode = _nodes_getTempNode(param);
+		tempNode = tempNode || _nodes_generateTempNode();
 		Nodes.nFocus.linkTo(tempNode);
-		_nodes_focusNode(tempNode)
-		_nodes_editNode(tempNode)
+		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
 	}
 	if(type == 'around'){
-		var tempNode = _nodes_getTempNode(param);
-		_nodes_editNode(tempNode)
-		Nodes.nFocus.linkTo(tempNode);
-		tempNode.moveTo(param);
+		tempNode = tempNode || _nodes_generateTempNode(param);
+		tempNode.moveTo(param, 400, function(node){
+			Nodes.nFocus.linkTo(tempNode);
+			_nodes_nodeEdit(tempNode)
+		});
 	}
 }
 
-function _nodes_focusNode(node){	
+function _nodes_nodeFocus(node, callback){	
 	Nodes.nFocus = node;
 	node.setStatus('static');
-	node.moveTo(centerPoint)
-	Comp.ring.show(centerPoint)
+	node.moveTo(centerPoint, 400, function(node){
+		Comp.ring.show(centerPoint);
+		Nodes.items.forEach(function(n){
+			if(n.nid == node.nid){
 
-	Nodes.items.forEach(function(n){
-		if(n.nid == node.nid){
-
-		}else if(n.isLinked(node.nid)){
-			n.setStatus('around', node);
-		}else{
-			n.setStatus('float');
-		}
+			}else if(n.isLinked(node.nid)){
+				n.setStatus('around', node);
+			}else{
+				n.setStatus('float');
+			}
+		})
+		callback && callback(node)
 	})
 }
 
-function _nodes_editNode(node){
+function _nodes_nodeEdit(node){
 	Nodes.nEdit = node;
-	Entry.ele.val(Model.getText(node.nid)).focus();
-	node.displayAs('text');
+	Nodes.nEdit.setOpacity(0);
+	Entry.show();
 }
 
-function _nodes_nodeEnter(text){
+function _nodes_nodeTextUpdate(text){
+	if(Nodes.nEdit){
+		var node = Nodes.nEdit;
+		Nodes.nEdit.setText(text);
+		Nodes.items.forEach(function(n){
+			if(n.nid == node.nid){
+
+			}else if(n.isLinked(node.nid)){
+				
+			}else{
+				// n.updateDistanceByText(node);
+			}
+		})
+	}	
+}
+
+function _nodes_nodeEnter(){
 	var text = Entry.ele.val().replace(/^\s+|\s+$/g,'');
+	if(Nodes.nEdit){
+		Nodes.nEdit.displayAs('text');
+		Nodes.nEdit.setText(text);
+		Nodes.nEdit.setOpacity(1);
+		Entry.hide();
+	}
+	
 	if(Nodes.nEdit && Nodes.nEdit.nid){
 		var n = Model.getNodeByText(text);
 		if(n && n.id != Nodes.nEdit.nid){
 			//merge
 		}else{
 			Model.updateText(Nodes.nEdit.nid, text);
-			Nodes.nEdit.setText(text);
 		} 
 	}else if(Nodes.nEdit && !Nodes.nEdit.nid){
 		var linkInfo = Nodes.nEdit.getLinkInfo();
 		var nid = Model.addNode(text,linkInfo);
-		Nodes.nEdit.nid = nid;
+		Nodes.nEdit.setNid(nid);
+	}
+	Nodes.nEdit = null;
+}
+
+function _nodes_handleEsc(){
+	if(Nodes.nFocus){
+		Nodes.items.forEach(function(n){
+			n.setStatus('float');
+		})
+		Nodes.nFocus = null;
+		Comp.ring.hide();
+	}
+	if(Nodes.nEdit){
+		Nodes.nEdit = null;
+		Entry.hide();;
+	}
+	var tempNode = _nodes_getTempNode();
+	if(tempNode){
+		_nodes_nodeDelete(tempNode.nid);
 	}
 }
 
-function _nodes_releaseNodes() {
-	
+function _nodes_nodeDelete(nid) {
+	var node = _nodes_getNodeByNid(nid);
+	if(nid){
+		Model.deleteNode(nid);
+	}
+	Nodes.items.forEach(function(n){
+		n.removeLinkOfNode(nid);
+	})
+	node.remove();
+	Nodes.items = _.filter(Nodes.items, function(n){
+		return n.nid != nid;
+	})
+
+	if(Nodes.nEdit && Nodes.nEdit.nid == nid){
+		Nodes.nEdit == null;
+		Entry.ele.val('');
+	}
+	if(Nodes.nFocus && Nodes.nFocus.nid == nid){
+		Nodes.nFocus == null;
+		Comp.ring.hide();
+	}
+
 }
 
-
-function _nodes_getNodeByUid(uid) {
-	return _.find(Nodes.items, function(n){
-		return n.uid == uid;
+function _nodes_updateScope(pos) {
+	if(pos){
+		Comp.scope.moveTo(pos);
+	}
+	Nodes.items.forEach(function(n){
+		n.updateDisplayByScope();
 	})
 }
 
@@ -113,26 +188,21 @@ function _nodes_getNodeByNid(nid) {
 	})
 }
 
-function _nodes_getLinkByNid(fromNid, toNid) {
-	return _.find(Nodes.links, function(l){
-		return l.fromNid == fromNid && l.toNid == toNid;
+function _nodes_getTempNode(){
+	return  _.find(Nodes.items, function(n){
+		return n.nid == null;
 	})
 }
 
-function _nodes_getTempNode(params){
-	params = params || {}
-	var temp =  _.find(Nodes.items, function(n){
-		return n.nid == null;
+function _nodes_generateTempNode(pos){
+	pos = pos || {}
+	var temp = new Node({
+		x: pos.x || 0,
+		y: pos.y || 0,
+		status: 'static',
+		displayAs: 'text'
 	})
-	if(!temp){
-		temp = new Node({
-			x: params.x || 0,
-			y: params.y || 0,
-			status: 'static',
-			displayAs: 'text'
-		})
-		Nodes.items.push(temp);
-	}
+	Nodes.items.push(temp);
 	return temp;
 }
 
@@ -141,18 +211,7 @@ function _nodes_onFrame() {
 	Nodes.items.forEach(function(n){
 		n.onFrame(Nodes.iClock);
 	})
-	// Nodes.updatingUids = _.uniq(Nodes.updatingUids);
-	// Nodes.links.forEach(function(l) {
-	// 	var f = _.find(Nodes.updatingUids, function(n) {
-	// 		return n == l.fromUid || n == l.toUid;
-	// 	})
-	// 	if(f){
-	// 		var fromNode = _nodes_getNodeByUid(l.fromUid);
-	// 		var toNode = _nodes_getNodeByUid(l.toUid);
-	// 		console.log(fromNode.prevPos,toNode.prevPos)
-	// 		l.plot(fromNode.prevPos.x, fromNode.prevPos.y, toNode.prevPos.x, toNode.prevPos.y);
-	// 	}
-	// })
+	Comp.scope.onFrame(Nodes.iClock);
 	Nodes.iClock++;
 	if(Nodes.iClock == 2500){
 		Nodes.iClock = 0;

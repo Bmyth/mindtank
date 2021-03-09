@@ -1,6 +1,7 @@
 var windowWidth, windowHeight, centerX, centerY, centerPoint;
 var draw;
 var Comp = {};
+var consoleUid = 0;
 
 $(function() {
 	windowWidth = $(window).width();

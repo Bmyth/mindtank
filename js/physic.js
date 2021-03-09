@@ -3,11 +3,8 @@ var Physic ={
 	addCircle: _phy_addCircle,
 	setStatic: _phy_setStatic,
 	setPosition: _phy_setPosition,
-	getObjectByIdx: _phy_getObjectByIdx,
 	deleteObject: _phy_deleteObject,
-	applyForce: _phy_applyForce,
-	clear: _phy_clear,
-	objects: []
+	applyForce: _phy_applyForce
 }
 
 function _phy_init(){
@@ -45,25 +42,10 @@ function _phy_setPosition(obj, position) {
 	this.Body.setPosition(obj, position);
 }
 
-
-function _phy_getObjectByIdx(idx){
-	return this.objects.find(function(i){
-		return i.idx == idx;
-	})
-}
-
-function _phy_deleteObject(params){
-
+function _phy_deleteObject(o){
+	this.World.remove(this.world, o);
 }
 
 function _phy_applyForce(obj, force){
 	Matter.Body.applyForce(obj, obj.position, force);
-}
-
-function _phy_clear(){
-	this.objects.forEach(function(o){
-		if(!o.keep){
-			Physic.World.remove(Physic.world, o);
-		}
-	})
 }
