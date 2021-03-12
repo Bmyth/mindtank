@@ -1,13 +1,15 @@
 var Model = {
 	init : _model_init,
 	addNode : _model_add,
-	updateText : _model_updateText,
-	updateLink : _model_updateLink,
+	getNodeByText : _model_getNodeByText,
+	getNodeById : _model_getNodeById,
+	getText : _model_getText,
+	addLink : _model_addLink,
 	updateNode : _model_updateNode,
 	deleteNode : _model_deleteNode,
-	getText : _model_getText,
-	getNodeByText : _model_getNodeByText,
+	mergeNode : _model_mergeNode,
 	save : _model_save,
+	canSave : true,
 	nodes: []
 }
 
@@ -19,19 +21,19 @@ function _model_init() {
 	Model.nodes = nodes || [];
 }
 
-function _model_add(text, linkInfo) {
-	var matched = _model_getNodeByText(text);
+function _model_add(params) {
+	var matched = _model_getNodeByText(params.t);
 	if(!matched){
 		var id = (new Date()).valueOf();
 		matched = {
 			id : id,
-			t: text,
-			next: linkInfo.next,
-			prev: linkInfo.prev
+			t: params.t,
+			next: [],
+			prev: []
 		}
 		Model.nodes.push(matched);
 	}
-	_model_syncLinks(matched);
+	_model_updateNode(matched, params);
 	_model_save();
 	return matched.id;
 }
@@ -72,13 +74,7 @@ function _model_syncLinks(node){
 	})
 }
 
-function _model_updateText(nid, text) {
-	var node = _model_getNodeById(nid);
-	node.t = text;
-	_model_save();
-}
-
-function _model_updateLink(nid1, nid2, dnum, notsave) {
+function _model_addLink(nid1, nid2, dnum) {
 	var node1 = _model_getNodeById(nid1);
 	var link = _.find(node1.links, function(l){
 		return l.id == nid2
@@ -114,25 +110,25 @@ function _model_updateLink(nid1, nid2, dnum, notsave) {
 			return l.id == link.id
 		})
 	}
-	if(!notsave){
-		_model_save();
-	}
+	_model_save();
 }
 
-function _model_updateNode(_node, notsave){
-	var node = _model_getNodeById(node.id);
-	if(_node.t){
-		node.t = _node.t;
+function _model_updateNode(iNode, params){
+	var node = typeof iNode == 'object' ? iNode : _model_getNodeById(iNode);
+	if(params.t){
+		node.t = params.t;
 	}
-	if(_node.next){
-		node.next = _node.next;
+	if(params.next){
+		node.next = params.next;
 	}
-	if(_node.prev){
-		node.prev = _node.prev;
+	if(params.prev){
+		node.prev = params.prev;
 	}
-	if(!notsave){
-		_model_save();
+
+	if(params.next || params.prev){
+		_model_syncLinks(node);
 	}
+	_model_save();
 }
 
 function _model_deleteNode(id){
@@ -146,6 +142,88 @@ function _model_deleteNode(id){
 		n.prev = _.filter(n.prev, function(l){
 			return l.id != id;
 		})
+	})
+	_model_save();
+}
+
+function _model_mergeNode(id1, id2){
+	var node1 = _model_getNodeById(id1);
+	var node2 = _model_getNodeById(id2);
+	node2.next.forEach(function(ne){
+		var n = _model_getNodeById(ne.id);
+		var p1 = _.find(n.prev, function(pr){
+			return pr.id == id1;
+		})
+		var p2 = _.find(n.prev, function(pr){
+			return pr.id == id2;
+		})
+		var p = {
+			id : id1,
+			w : 0
+		}
+		if(p1){
+			p.w += p1.w
+		}
+		if(p2){
+			p.w += p2.w
+		}
+		n.prev = _.filter(n.prev, function(pr){
+			return pr.id != id1 && pr.id != id2;
+		})
+		n.prev.push(p)
+
+		var ne1 = _.find(node1.next, function(ne){
+			return ne.id == n.id;
+		})
+		if(!ne1){
+			ne1 = {
+				id : n.id,
+				w : p.w
+			}
+			node1.next.push(ne1);
+		}else{
+			ne1.w = p.w
+		}
+	})
+
+	node2.prev.forEach(function(pr){
+		var n = _model_getNodeById(pr.id);
+		var p1 = _.find(n.next, function(ne){
+			return pr.id == id1;
+		})
+		var p2 = _.find(n.next, function(ne){
+			return pr.id == id2;
+		})
+		var p = {
+			id : id1,
+			w : 0
+		}
+		if(p1){
+			p.w += p1.w
+		}
+		if(p2){
+			p.w += p2.w
+		}
+		n.next = _.filter(n.next, function(ne){
+			return pr.id != id1 && pr.id != id2;
+		})
+		n.next.push(p)
+
+		var pr1 = _.find(node1.prev, function(pr){
+			return pr.id == n.id;
+		})
+		if(!pr1){
+			pr1 = {
+				id : n.id,
+				w : p.w
+			}
+			node1.prev.push(pr1);
+		}else{
+			pr1.w = p.w
+		}
+	})
+	Model.nodes = _.filter(Model.nodes, function(n){
+		return n.id != id2
 	})
 	_model_save();
 }
@@ -168,5 +246,7 @@ function _model_getText(id) {
 }
 
 function _model_save(){
-	localStorage.setItem('nodelist', JSON.stringify(Model.nodes));
+	if(Model.canSave){
+		localStorage.setItem('nodelist', JSON.stringify(Model.nodes));
+	}		
 }

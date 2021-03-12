@@ -1,7 +1,7 @@
 var windowWidth, windowHeight, centerX, centerY, centerPoint;
 var draw;
 var Comp = {};
-var consoleUid = 0;
+var drawAnchor1, drawAnchor2, drawAnchor3, drawAnchor4, drawAnchor5;
 
 $(function() {
 	windowWidth = $(window).width();
@@ -19,7 +19,12 @@ $(function() {
         width: windowWidth + 'px',
         height: windowHeight + 'px'
     })
-    draw = SVG().addTo('#svgpaper').size('100%', '100%')
+    draw = SVG().addTo('#svgpaper').size('100%', '100%');
+    drawAnchor1 = draw.rect(0, 0).opacity(0).attr('idx','1');
+    drawAnchor2 = draw.rect(0, 0).opacity(0).attr('idx','2');
+    drawAnchor3 = draw.rect(0, 0).opacity(0).attr('idx','3');
+    drawAnchor4 = draw.rect(0, 0).opacity(0).attr('idx','4');
+    drawAnchor5 = draw.rect(0, 0).opacity(0).attr('idx','5');
 
     Model.init();
     Physic.init();

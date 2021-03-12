@@ -5,7 +5,8 @@ Comp.ring = {
 	innerRadius: 60,
 	outerRadius: 160,
 	smallDisk: null, 
-	bigDisk: null
+	bigDisk: null,
+	phyObj: null
 }
 
 Comp.scope = {
@@ -20,34 +21,45 @@ Comp.scope = {
 }
 
 function _ring_show(pos) {
-	if(this.smallDisk && this.bigDisk){
+	if(this.bigDisk && this.smallDisk){
 		this.moveTo(pos);
 		return;
 	}
-	this.smallDisk = draw.circle().attr({
-		r: 1,
-		cx: pos.x,
-		cy: pos.y,
-		fill: 'transparent',
-		stroke: '#ddd'
-	});
-	this.smallDisk.animate({
-	  duration: 600
-	}).attr('r',this.innerRadius);
 	this.bigDisk = draw.circle().attr({
 		r: 1,
 		cx: pos.x,
 		cy: pos.y,
-		fill: 'transparent',
-		stroke: '#aaa'
+		fill: '#fff',
+		opacity: 0.1,
+		stroke: '#333'
 	});
+	this.bigDisk.insertBefore(drawAnchor3)
 	this.bigDisk.animate({
 	  duration: 600
 	}).attr('r',this.outerRadius);
-	this.bigDisk.back();
-
+	this.smallDisk = draw.circle().attr({
+		r: 1,
+		cx: pos.x,
+		cy: pos.y,
+		fill: '#fff',
+		opacity: 0.2,
+		stroke: '#666'
+	});
+	this.smallDisk.insertBefore(drawAnchor3)
+	this.smallDisk.animate({
+	  duration: 600
+	}).attr('r',this.innerRadius);
+	
 	this.smallDisk.on('click',_ring_clickSmallRing);
 	this.bigDisk.on('click',_ring_clickBigRing);
+	this.phyObj =  Physic.addCircle({
+		x: pos.x,
+		y: pos.y,
+		r: this.outerRadius,
+		isStatic: true,
+		frictionAir: 0.02,
+		mass: 200
+	});
 }
 
 function _ring_hide() {
@@ -55,15 +67,17 @@ function _ring_hide() {
 	this.smallDisk = null;
 	this.bigDisk.remove();
 	this.bigDisk = null;
+	Physic.deleteObject(this.phyObj);
 }
 
 function _ring_moveTo(pos) {
 	this.smallDisk.animate({
-	  duration: 500
+	  duration: 400
 	}).center(pos.x, pos.y);
 	this.bigDisk.animate({
-	  duration: 500
+	  duration: 400
 	}).center(pos.x, pos.y);
+	Physic.setPosition(this.phyObj, {x:pos.x,y:pos.y});
 }
 
 function _ring_clickSmallRing(e){

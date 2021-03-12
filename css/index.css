@@ -11,7 +11,9 @@
 .oh {overflow: hidden;}
 .hide {display: none;}
 
+#svgpaper {background: #fff;}
 #svgpaper text{cursor: pointer;}
 
 body {background: #fff;}
-#entry {border: none; outline: none; display: none; width: auto; text-align: center; background: transparent; font-size: 14px; color: #333;}
+#entry {border: none; outline: none; width: auto; text-align: center; background: transparent; font-size: 14px; color: #333;}
+.out {left: 9999px; top: 9999px;}

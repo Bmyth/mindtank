@@ -5,12 +5,15 @@ var Nodes = {
 	iClock: 0,
 	nFocus: null, 
 	nEdit: null,
+	nHover: null,
 	init: _nodes_init,
 	handleNodeNext: _nodes_nodeNext,
 	handleNodeTextUpdate: _nodes_nodeTextUpdate,
-	handleNodeEnter: _nodes_nodeEnter,
-	handleEsc: _nodes_handleEsc,
+	handleKeyEnter: _nodes_keyEnter,
+	handleKeyEsc: _nodes_keyEsc,
+	handleKeyDelete: _nodes_KeyDelete,
 	handleNodeDelete: _nodes_nodeDelete,
+	handleNodeMerge: _nodes_nodeMerge,
 	getNodeByNid: _nodes_getNodeByNid,
 	getTempNode: _nodes_getTempNode,
 	updateScope: _nodes_updateScope
@@ -51,7 +54,7 @@ function _nodes_nodeNext(type, param){
 			_nodes_nodeDelete(tempNode.nid);
 		}
 		var node = _nodes_getNodeByNid(param);
-		_nodes_nodeFocus(node, _nodes_nodeEdit)
+		_nodes_nodeFocus(node)
 	}
 	if(type == 'serial'){
 		tempNode = tempNode || _nodes_generateTempNode();
@@ -60,6 +63,7 @@ function _nodes_nodeNext(type, param){
 	}
 	if(type == 'around'){
 		tempNode = tempNode || _nodes_generateTempNode(param);
+		tempNode.status = 'around';
 		tempNode.moveTo(param, 400, function(node){
 			Nodes.nFocus.linkTo(tempNode);
 			_nodes_nodeEdit(tempNode)
@@ -91,47 +95,61 @@ function _nodes_nodeEdit(node){
 	Entry.show();
 }
 
-function _nodes_nodeTextUpdate(text){
+function _nodes_nodeTextUpdate(){
+	var text = Entry.ele.val();
 	if(Nodes.nEdit){
 		var node = Nodes.nEdit;
 		Nodes.nEdit.setText(text);
+		var matched = null;
 		Nodes.items.forEach(function(n){
 			if(n.nid == node.nid){
 
 			}else if(n.isLinked(node.nid)){
 				
 			}else{
-				// n.updateDistanceByText(node);
+				matched = n.matchText(Nodes.nEdit);
 			}
 		})
 	}	
 }
 
-function _nodes_nodeEnter(){
+function _nodes_keyEnter(){
+	if(!Nodes.nEdit){
+		//open temp
+		return;
+	}
+	Model.canSave = false;
 	var text = Entry.ele.val().replace(/^\s+|\s+$/g,'');
-	if(Nodes.nEdit){
-		Nodes.nEdit.displayAs('text');
-		Nodes.nEdit.setText(text);
-		Nodes.nEdit.setOpacity(1);
-		Entry.hide();
-	}
-	
-	if(Nodes.nEdit && Nodes.nEdit.nid){
-		var n = Model.getNodeByText(text);
-		if(n && n.id != Nodes.nEdit.nid){
-			//merge
-		}else{
-			Model.updateText(Nodes.nEdit.nid, text);
-		} 
-	}else if(Nodes.nEdit && !Nodes.nEdit.nid){
-		var linkInfo = Nodes.nEdit.getLinkInfo();
-		var nid = Model.addNode(text,linkInfo);
+	var linkinfo = Nodes.nEdit.getLinkInfo();
+
+	if(!Nodes.nEdit.nid){
+		var nid = Model.addNode({t:text,next:linkinfo.next,prev:linkinfo.prev});
 		Nodes.nEdit.setNid(nid);
+	}else{
+		Model.updateText(Nodes.nEdit.nid, text);
 	}
+
+	var matched = Model.getNodeByText(text);
+	if(matched && matched.id != Nodes.nEdit.nid){
+		_nodes_nodeMerge(matched.id, Nodes.nEdit.nid);
+	}
+	Model.canSave = true;
+	Model.save();
+
+	Entry.hide();
+	Nodes.nEdit.displayAs('text');
+	Nodes.nEdit.setText(text);
+	Nodes.nEdit.setOpacity(1);
 	Nodes.nEdit = null;
 }
 
-function _nodes_handleEsc(){
+function _nodes_KeyDelete(){
+	if(Nodes.nHover){
+		_nodes_nodeDelete(Nodes.nHover.nid);
+	}
+}
+
+function _nodes_keyEsc(){
 	if(Nodes.nFocus){
 		Nodes.items.forEach(function(n){
 			n.setStatus('float');
@@ -141,7 +159,7 @@ function _nodes_handleEsc(){
 	}
 	if(Nodes.nEdit){
 		Nodes.nEdit = null;
-		Entry.hide();;
+		Entry.hide();
 	}
 	var tempNode = _nodes_getTempNode();
 	if(tempNode){
@@ -150,27 +168,39 @@ function _nodes_handleEsc(){
 }
 
 function _nodes_nodeDelete(nid) {
-	var node = _nodes_getNodeByNid(nid);
 	if(nid){
 		Model.deleteNode(nid);
 	}
-	Nodes.items.forEach(function(n){
-		n.removeLinkOfNode(nid);
-	})
-	node.remove();
-	Nodes.items = _.filter(Nodes.items, function(n){
-		return n.nid != nid;
-	})
-
+	var node = _nodes_getNodeByNid(nid);
 	if(Nodes.nEdit && Nodes.nEdit.nid == nid){
 		Nodes.nEdit == null;
 		Entry.ele.val('');
 	}
 	if(Nodes.nFocus && Nodes.nFocus.nid == nid){
 		Nodes.nFocus == null;
-		Comp.ring.hide();
 	}
+	if(Nodes.nHover && Nodes.nHover.nid == nid){
+		Nodes.nHover == null;
+	}
+	node.remove(function(){
+		Nodes.items = _.filter(Nodes.items, function(n){
+			return n.nid != nid;
+		})
+	});
+}
 
+function _nodes_nodeMerge(nid1, nid2){
+	//model merge
+	Model.mergeNode(nid1,nid2); 
+	//node merge
+	var n = Model.getNodeById(nid1);
+	var node = _nodes_getNodeByNid(nid1);
+	node.initLinks();
+	n.prev.forEach(function(pr){
+		var prevNode = _nodes_getNodeByNid(pr.id);
+		prevNode.initLinks();
+ 	})
+ 	_nodes_nodeDelete(nid2);
 }
 
 function _nodes_updateScope(pos) {
