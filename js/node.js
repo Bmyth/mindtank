@@ -300,7 +300,8 @@ function _node_setStatus(status, params){
 	if(status == 'float'){
 		this.centerNode = null;
 		this.setStatic(false)
-		this.displayAs('dot');
+		//this.displayAs('dot');
+		this.displayAs('text');
 		var pos = this.getPos();
 		var l = Matter.Vector.magnitude({x:pos.x - centerX, y:pos.y - centerY});
 		if(l < Comp.ring.outerRadius){
@@ -410,8 +411,9 @@ function _node_matchText(node){
 	if(this.displayType == 'text'){
 		return;
 	}
-	var matched = node.text.length < 2 ? false : (this.text.indexOf(node.text) >= 0);
-	var equal = matched && node.text == this.text;
+	var equal = node.text == this.text;
+	var matched = equal || (node.text.length < 2 ? false : (this.text.indexOf(node.text) >= 0));
+	
 	if(this.status == 'matched' && !equal){
 		this.setStatus('unmatched');
 	}

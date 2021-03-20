@@ -39,22 +39,25 @@ function _nodes_init() {
 }
 
 function _nodes_nodeNext(type, param){
-	Entry.hide();
-	if(Nodes.nEdit){
-        Nodes.nEdit.setOpacity(1);
-        Nodes.nEdit = null;
-    }
+	// Entry.hide();
+	// if(Nodes.nEdit){
+ //        Nodes.nEdit.setOpacity(1);
+ //        Nodes.nEdit = null;
+ //    }
 	var tempNode = _nodes_getTempNode();
 	if(type == 'point'){
 		tempNode = tempNode || _nodes_generateTempNode(param);
 		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
 	}
 	if(type == 'node'){
-		if(tempNode){
-			_nodes_nodeDelete(tempNode.nid);
-		}
 		var node = _nodes_getNodeByNid(param);
-		_nodes_nodeFocus(node)
+		if(Nodes.nEdit){
+			var text = Model.getText(node.nid);
+			Entry.ele.val(text).focus();
+			_nodes_nodeTextUpdate();
+		}else{
+			_nodes_nodeFocus(node)
+		}
 	}
 	if(type == 'serial'){
 		tempNode = tempNode || _nodes_generateTempNode();
