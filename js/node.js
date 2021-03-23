@@ -12,7 +12,8 @@ function BaseNode(params){
 	this.style = {
 		dotColor : '#aaa',
 		fontColor : '#666',
-		fontHoverColor : '#333'
+		fontHoverColor : '#333',
+		linkColor : '#666'
 	}
 	this.phyObj = Physic.addCircle({
 		x: params.x,
@@ -157,7 +158,7 @@ function _node_drawLink(node, params){
 	var pos = this.getPos();
 	var pos2 = node.getPos();
 	if(!link){
-		var line = draw.line(pos.x, pos.y, pos2.x, pos2.y).stroke({ width: 0.1,color: '#666'});
+		var line = draw.line(pos.x, pos.y, pos2.x, pos2.y).stroke({ width: 0.1,color: this.style.linkColor});
 		line.insertBefore(drawAnchor2)
 		link = {
 			line: line,
@@ -300,8 +301,8 @@ function _node_setStatus(status, params){
 	if(status == 'float'){
 		this.centerNode = null;
 		this.setStatic(false)
-		//this.displayAs('dot');
-		this.displayAs('text');
+		this.displayAs('dot');
+		//this.displayAs('text');
 		var pos = this.getPos();
 		var l = Matter.Vector.magnitude({x:pos.x - centerX, y:pos.y - centerY});
 		if(l < Comp.ring.outerRadius){
@@ -408,9 +409,9 @@ function _node_setStatic(isStatic) {
 }
 
 function _node_matchText(node){
-	if(this.displayType == 'text'){
-		return;
-	}
+	// if(this.displayType == 'text'){
+	// 	return;
+	// }
 	var equal = node.text == this.text;
 	var matched = equal || (node.text.length < 2 ? false : (this.text.indexOf(node.text) >= 0));
 	
@@ -418,6 +419,7 @@ function _node_matchText(node){
 		this.setStatus('unmatched');
 	}
 	if(equal){
+		console.log(equal)
 		this.setStatus('matched', node.getPos())
 	}else if(matched && this.displayType == 'dot'){
 		this.displayAs('tempText');

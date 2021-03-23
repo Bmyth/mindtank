@@ -147,8 +147,8 @@ function _model_deleteNode(id){
 }
 
 function _model_mergeNode(id1, id2){
-	var node1 = _model_getNodeById(id1);
-	var node2 = _model_getNodeById(id2);
+	var node1 = _model_getNodeById(id1) || Nodes.getNodeData(id1);
+	var node2 = _model_getNodeById(id2) || Nodes.getNodeData(id1);
 	node2.next.forEach(function(ne){
 		var n = _model_getNodeById(ne.id);
 		var p1 = _.find(n.prev, function(pr){

@@ -2,6 +2,7 @@ var Entry = {
 	init: _entry_init,
     ele: null,
     onframe: _entry_onFrame,
+    pureVal: _entry_pureVal,
     show: _entry_show,
     hide: _entry_hide,
     x: 0,
@@ -32,7 +33,8 @@ function _entry_Keyup(e){
         _entry_enter();
     }
     //delete
-    else if(key == '46'){
+    else if(key == '46' || key == '8'){
+        console.log('de')
         _entry_delete();
     }
     // left
@@ -109,6 +111,10 @@ function _entry_hide(){
         Entry.ele.val('').focus();
         Entry.ele.removeClass('z30');
     }
+}
+
+function _entry_pureVal(){
+    return Entry.ele.val().replace(/^\s+|\s+$/g,'');
 }
 
 function _entry_onFrame(){

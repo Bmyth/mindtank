@@ -16,6 +16,7 @@ var Nodes = {
 	handleNodeMerge: _nodes_nodeMerge,
 	getNodeByNid: _nodes_getNodeByNid,
 	getTempNode: _nodes_getTempNode,
+	getNodeData: _nodes_getNodeData,
 	updateScope: _nodes_updateScope
 }
 
@@ -39,24 +40,22 @@ function _nodes_init() {
 }
 
 function _nodes_nodeNext(type, param){
-	// Entry.hide();
-	// if(Nodes.nEdit){
- //        Nodes.nEdit.setOpacity(1);
- //        Nodes.nEdit = null;
- //    }
 	var tempNode = _nodes_getTempNode();
 	if(type == 'point'){
+		if(Nodes.nEdit){
+			_nodes_nodeUnEdit(Nodes.nEdit);
+		}
 		tempNode = tempNode || _nodes_generateTempNode(param);
 		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
 	}
 	if(type == 'node'){
 		var node = _nodes_getNodeByNid(param);
-		if(Nodes.nEdit){
+		if(Nodes.nEdit && !Nodes.nEdit.nid){
 			var text = Model.getText(node.nid);
 			Entry.ele.val(text).focus();
 			_nodes_nodeTextUpdate();
 		}else{
-			_nodes_nodeFocus(node)
+			_nodes_nodeFocus(node, _nodes_nodeEdit)
 		}
 	}
 	if(type == 'serial'){
@@ -65,6 +64,9 @@ function _nodes_nodeNext(type, param){
 		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
 	}
 	if(type == 'around'){
+		if(Nodes.nEdit){
+			_nodes_nodeUnEdit(Nodes.nEdit);
+		}
 		tempNode = tempNode || _nodes_generateTempNode(param);
 		tempNode.status = 'around';
 		tempNode.moveTo(param, 400, function(node){
@@ -98,6 +100,12 @@ function _nodes_nodeEdit(node){
 	Entry.show();
 }
 
+function _nodes_nodeUnEdit(node){
+	Nodes.nEdit = null;
+	node.setOpacity(1);
+	Entry.hide();
+}
+
 function _nodes_nodeTextUpdate(){
 	var text = Entry.ele.val();
 	if(Nodes.nEdit){
@@ -121,27 +129,23 @@ function _nodes_keyEnter(){
 		//open temp
 		return;
 	}
-	Model.canSave = false;
-	var text = Entry.ele.val().replace(/^\s+|\s+$/g,'');
+	var text = Entry.pureVal();
 	var linkinfo = Nodes.nEdit.getLinkInfo();
 
-	if(!Nodes.nEdit.nid){
+	var matched = Model.getNodeByText(text);
+	if(matched){
+		_nodes_nodeMerge(matched.id, Nodes.nEdit.nid);
+		Nodes.nEdit = _nodes_getNodeByNid(matched.id);
+	}else if(!Nodes.nEdit.nid){
 		var nid = Model.addNode({t:text,next:linkinfo.next,prev:linkinfo.prev});
 		Nodes.nEdit.setNid(nid);
+		Nodes.nEdit.setText(text);
 	}else{
 		Model.updateText(Nodes.nEdit.nid, text);
 	}
 
-	var matched = Model.getNodeByText(text);
-	if(matched && matched.id != Nodes.nEdit.nid){
-		_nodes_nodeMerge(matched.id, Nodes.nEdit.nid);
-	}
-	Model.canSave = true;
-	Model.save();
-
 	Entry.hide();
 	Nodes.nEdit.displayAs('text');
-	Nodes.nEdit.setText(text);
 	Nodes.nEdit.setOpacity(1);
 	Nodes.nEdit = null;
 }
@@ -194,7 +198,7 @@ function _nodes_nodeDelete(nid) {
 
 function _nodes_nodeMerge(nid1, nid2){
 	//model merge
-	Model.mergeNode(nid1,nid2); 
+	Model.mergeNode(nid1,nid2);
 	//node merge
 	var n = Model.getNodeById(nid1);
 	var node = _nodes_getNodeByNid(nid1);
@@ -237,6 +241,18 @@ function _nodes_generateTempNode(pos){
 	})
 	Nodes.items.push(temp);
 	return temp;
+}
+
+function _nodes_getNodeData(nid){
+	var node = _nodes_getNodeByNid(nid);
+	var linkinfo = Nodes.nEdit.getLinkInfo();
+	var text = nid ? Model.getText(nid) : Entry.pureVal();
+	return {
+		id : nid,
+		t:text,
+		next:linkinfo.next,
+		prev:linkinfo.prev
+	}
 }
 
 function _nodes_onFrame() {
