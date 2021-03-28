@@ -1,6 +1,7 @@
 var Physic ={
 	init: _phy_init,
 	addCircle: _phy_addCircle,
+	addConstraint: _phy_addConstraint,
 	setStatic: _phy_setStatic,
 	setPosition: _phy_setPosition,
 	deleteObject: _phy_deleteObject,
@@ -19,6 +20,12 @@ function _phy_init(){
     this.Composites = Matter.Composites;
     this.Constraint = Matter.Constraint;
 
+    //default 2
+    this.engine.constraintIterations = 1;
+    //default 6
+	this.engine.positionIterations = 3;
+	//default 4
+	this.engine.velocityIterations = 2;
 	this.Engine.run(this.engine);
 
 	var l1 = this.Bodies.rectangle(windowWidth * 0.5, 0, windowWidth, 1, {isStatic: true});
@@ -32,6 +39,20 @@ function _phy_addCircle(params){
 	var circle = this.Bodies.circle(params.x, params.y, params.r, params);
 	this.World.add(this.world, [circle]);
 	return circle;
+}
+
+function _phy_addConstraint(obj1, obj2, params){
+	params = params || {}
+	stiffness = params.stiffness || 0.01;
+	length = params.length || 50;
+	var constraint = this.Constraint.create({ 
+		bodyA: obj1,
+        bodyB: obj2,
+        length: length,
+        stiffness: stiffness
+    })
+	this.World.add(this.world, constraint);
+	return constraint;
 }
 
 function _phy_setStatic(obj, isStatic) {

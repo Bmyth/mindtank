@@ -8,7 +8,6 @@ var Nodes = {
 	nHover: null,
 	init: _nodes_init,
 	handleNodeNext: _nodes_nodeNext,
-	handleNodeTextUpdate: _nodes_nodeTextUpdate,
 	handleKeyEnter: _nodes_keyEnter,
 	handleKeyEsc: _nodes_keyEsc,
 	handleKeyDelete: _nodes_KeyDelete,
@@ -23,39 +22,43 @@ var Nodes = {
 function _nodes_init() {
 	Nodes.ele = $('#svgpaper');
 
+	//init nodes
     Model.nodes.forEach(function(n) {
-    	var node = new Node({
-    		nid: n.id,
-    		prev: n.prev,
-    		next: n.next
-    	});
+    	var node = new Node({nid: n.id});
     	Nodes.items.push(node);
     })
-
-    Nodes.items.forEach(function(n){
-    	n.initLinks();
+    //init links
+    Nodes.items.forEach(function(n) {
+    	n.setStatus('stable',false);
+    	n.setStatus('stableCount',-10);
+    	n.setStatus('linkNexts',VReset);
+    	n.setStatus('linkPrevs',VReset);
     })
-
     setInterval(_nodes_onFrame, 40)
 }
 
 function _nodes_nodeNext(type, param){
 	var tempNode = _nodes_getTempNode();
 	if(type == 'point'){
-		if(Nodes.nEdit){
-			_nodes_nodeUnEdit(Nodes.nEdit);
-		}
 		tempNode = tempNode || _nodes_generateTempNode(param);
-		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
+		tempNode.setStatus('onFocus',true,function(node){
+			node.setStatus('onEdit',true);
+		});
 	}
 	if(type == 'node'){
 		var node = _nodes_getNodeByNid(param);
 		if(Nodes.nEdit && !Nodes.nEdit.nid){
 			var text = Model.getText(node.nid);
-			Entry.ele.val(text).focus();
-			_nodes_nodeTextUpdate();
+			Entry.updateText(text);
+		}else if(Nodes.nEdit && Nodes.nEdit.nid){
+			Nodes.nEdit.setStatus('onEdit',false);
+			node.setStatus('onFocus',true,function(node){
+				node.setStatus('onEdit',true);
+			});
 		}else{
-			_nodes_nodeFocus(node, _nodes_nodeEdit)
+			node.setStatus('onFocus',true,function(node){
+				node.setStatus('onEdit',true);
+			});
 		}
 	}
 	if(type == 'serial'){
@@ -74,54 +77,6 @@ function _nodes_nodeNext(type, param){
 			_nodes_nodeEdit(tempNode)
 		});
 	}
-}
-
-function _nodes_nodeFocus(node, callback){	
-	Nodes.nFocus = node;
-	node.setStatus('static');
-	node.moveTo(centerPoint, 400, function(node){
-		Comp.ring.show(centerPoint);
-		Nodes.items.forEach(function(n){
-			if(n.nid == node.nid){
-
-			}else if(n.isLinked(node.nid)){
-				n.setStatus('around', node);
-			}else{
-				n.setStatus('float');
-			}
-		})
-		callback && callback(node)
-	})
-}
-
-function _nodes_nodeEdit(node){
-	Nodes.nEdit = node;
-	Nodes.nEdit.setOpacity(0);
-	Entry.show();
-}
-
-function _nodes_nodeUnEdit(node){
-	Nodes.nEdit = null;
-	node.setOpacity(1);
-	Entry.hide();
-}
-
-function _nodes_nodeTextUpdate(){
-	var text = Entry.ele.val();
-	if(Nodes.nEdit){
-		var node = Nodes.nEdit;
-		Nodes.nEdit.setText(text);
-		var matched = null;
-		Nodes.items.forEach(function(n){
-			if(n.nid == node.nid){
-
-			}else if(n.isLinked(node.nid)){
-				
-			}else{
-				matched = n.matchText(Nodes.nEdit);
-			}
-		})
-	}	
 }
 
 function _nodes_keyEnter(){
@@ -157,20 +112,17 @@ function _nodes_KeyDelete(){
 }
 
 function _nodes_keyEsc(){
-	if(Nodes.nFocus){
-		Nodes.items.forEach(function(n){
-			n.setStatus('float');
-		})
-		Nodes.nFocus = null;
-		Comp.ring.hide();
-	}
 	if(Nodes.nEdit){
-		Nodes.nEdit = null;
-		Entry.hide();
+		Nodes.nEdit.setStatus('onEdit',false);
 	}
-	var tempNode = _nodes_getTempNode();
-	if(tempNode){
-		_nodes_nodeDelete(tempNode.nid);
+	else{
+		if(Nodes.nFocus){
+			Nodes.nFocus.setStatus('onFocus',false);
+		}
+		var tempNode = _nodes_getTempNode();
+		if(tempNode){
+			_nodes_nodeDelete(tempNode.nid);
+		}
 	}
 }
 

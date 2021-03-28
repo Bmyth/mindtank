@@ -2,6 +2,17 @@ var windowWidth, windowHeight, centerX, centerY, centerPoint;
 var draw;
 var Comp = {};
 var drawAnchor1, drawAnchor2, drawAnchor3, drawAnchor4, drawAnchor5;
+var VReset = '%reset';
+var Style =  {
+    nodeShapeRadius : 10,
+    nodeDotColor : '#aaa',
+    nodeTextColor : '#666',
+    nodeTextHoverColor : '#333',
+    nodeLinkColor : '#666',
+    nodeTextSize : 12
+}
+
+var nnn = 0
 
 $(function() {
 	windowWidth = $(window).width();

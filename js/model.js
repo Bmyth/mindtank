@@ -82,14 +82,14 @@ function _model_addLink(nid1, nid2, dnum) {
 	if(!link){
 		link = {
 			id: nid2,
-			n: 0  
+			w: 0  
 		}
 		node1.links.push(link);
 	}
-	link.n += dnum;
-	if(link.n == 0){
+	link.w += dnum;
+	if(link.w == 0){
 		node1.links = _.filter(node1.links, function(l){
-			return l.id == link.id
+			return l.id != link.id
 		})
 	}
 
@@ -100,14 +100,14 @@ function _model_addLink(nid1, nid2, dnum) {
 	if(!link){
 		link = {
 			id: nid1,
-			n: 0  
+			w: 0  
 		}
 		node2.links.push(link);
 	}
-	link.n += dnum;
-	if(link.n == 0){
+	link.w += dnum;
+	if(link.w == 0){
 		node2.links = _.filter(node2.links, function(l){
-			return l.id == link.id
+			return l.id != link.id
 		})
 	}
 	_model_save();

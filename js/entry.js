@@ -3,6 +3,7 @@ var Entry = {
     ele: null,
     onframe: _entry_onFrame,
     pureVal: _entry_pureVal,
+    updateText: _entry_updateText,
     show: _entry_show,
     hide: _entry_hide,
     x: 0,
@@ -68,8 +69,9 @@ function _entry_Keyup(e){
 function _entry_compositionend(e) {
     if(!Nodes.nEdit){
         Nodes.handleNodeNext('point',{x:centerX,y:centerY})
+    }else{
+        Nodes.nEdit.setStatus('text',Entry.pureVal());
     }
-    Nodes.handleNodeTextUpdate();
 }
 
 function _entry_enter() {
@@ -101,7 +103,7 @@ function _entry_show () {
     }
 
     Entry.ele.addClass('z30');
-    var pos = Nodes.nEdit.getPos();
+    var pos = Nodes.nEdit.getStatus('position');
     var rect = Entry.ele[0].getBoundingClientRect();
     Entry.ele.css({left:pos.x - rect.width * 0.5, top: pos.y - rect.height * 0.5}).focus();
 }
@@ -110,6 +112,13 @@ function _entry_hide(){
     if(_entry_isVisible()){
         Entry.ele.val('').focus();
         Entry.ele.removeClass('z30');
+    }
+}
+
+function _entry_updateText(text){
+    Entry.ele.val('text').focus();
+    if(Nodes.nEdit){
+        Nodes.nEdit.setStatus('text',text);
     }
 }
 

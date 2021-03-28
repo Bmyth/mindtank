@@ -2,6 +2,7 @@ Comp.ring = {
 	show: _ring_show,
 	hide: _ring_hide,
 	moveTo: _ring_moveTo,
+	inOuterRange: _ring_inOuterRange,
 	innerRadius: 60,
 	outerRadius: 160,
 	smallDisk: null, 
@@ -86,6 +87,10 @@ function _ring_clickSmallRing(e){
 
 function _ring_clickBigRing(e){
 	Nodes.handleNodeNext('around', {x:e.clientX, y:e.clientY})
+}
+
+function _ring_inOuterRange(pos){
+	return Matter.Vector.magnitude({x:pos.x - centerX, y:pos.y - centerY}) < Comp.ring.outerRadius;
 }
 
 function _scope_onFrame(clock){
