@@ -21,11 +21,11 @@ function _phy_init(){
     this.Constraint = Matter.Constraint;
 
     //default 2
-    this.engine.constraintIterations = 1;
+    // this.engine.constraintIterations = 2;
     //default 6
-	this.engine.positionIterations = 3;
+	// this.engine.positionIterations = 4;
 	//default 4
-	this.engine.velocityIterations = 2;
+	// this.engine.velocityIterations = 2;
 	this.Engine.run(this.engine);
 
 	var l1 = this.Bodies.rectangle(windowWidth * 0.5, 0, windowWidth, 1, {isStatic: true});
@@ -43,7 +43,8 @@ function _phy_addCircle(params){
 
 function _phy_addConstraint(obj1, obj2, params){
 	params = params || {}
-	stiffness = params.stiffness || 0.01;
+	stiffness = params.stiffness || 0.005;
+	stiffness = 1;
 	length = params.length || 50;
 	var constraint = this.Constraint.create({ 
 		bodyA: obj1,

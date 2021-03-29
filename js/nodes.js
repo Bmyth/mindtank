@@ -52,19 +52,15 @@ function _nodes_nodeNext(type, param){
 			Entry.updateText(text);
 		}else if(Nodes.nEdit && Nodes.nEdit.nid){
 			Nodes.nEdit.setStatus('onEdit',false);
-			node.setStatus('onFocus',true,function(node){
-				node.setStatus('onEdit',true);
-			});
+			node.setStatus('onFocus',true);
 		}else{
-			node.setStatus('onFocus',true,function(node){
-				node.setStatus('onEdit',true);
-			});
+			node.setStatus('onFocus',true);
 		}
 	}
 	if(type == 'serial'){
 		tempNode = tempNode || _nodes_generateTempNode();
 		Nodes.nFocus.linkTo(tempNode);
-		_nodes_nodeFocus(tempNode, _nodes_nodeEdit)
+		_nodes_nodeFocus(tempNode)
 	}
 	if(type == 'around'){
 		if(Nodes.nEdit){

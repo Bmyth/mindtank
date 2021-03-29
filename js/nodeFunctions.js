@@ -19,9 +19,12 @@ function _nf_action_matching(node){
 		var d = Comp.ring.outerRadius - Comp.ring.innerRadius;
 		this.moveToArc({relatePoint: pos, radius:Comp.ring.outerRadius, radiusOffRange:[-d, -20], degreeOffRange:[-60, 60], callback: linkCallback})
 	}
-	else if(!matched && Comp.ring.inOuterRange(this.getStatus('position'))){
-		console.log('!match')
-		this.moveToArc({center:pos, relatePoint:this.getStatus('position'), radius: Comp.ring.outerRadius, radiusOffRange:[50, 150], degreeOffRange:[-10, 10], callback: notmatchCallback})
+	else if(!matched){
+		if(Comp.ring.inOuterRange(this.getStatus('position'))){
+			this.moveToArc({center:pos, relatePoint:this.getStatus('position'), radius: Comp.ring.outerRadius, radiusOffRange:[50, 150], degreeOffRange:[-10, 10], callback: notmatchCallback})
+		}else{
+			notmatchCallback(this);
+		}
 	}
 
 	function equalCallback(node){
@@ -86,7 +89,7 @@ function _nf_action_movetoarc(params){
 
 //--------------------------------------status----------------------------------------------
 function _nf_statusreset_displaytype(node){
-	if(node.getStatus('onFocus') || node.getStatus('onHover')){
+	if(node.getStatus('onFocus')){
 		return 'text';
 	}
 	else if(Nodes.nFocus && node.isLinked(Nodes.nFocus.nid)){
@@ -122,13 +125,12 @@ function _nf_statusupdate_displaytype(node, prevValue,value) {
 	var ele;
 	if(value == 'dot'){
 		ele = draw.circle(5).fill(Style.nodeDotColor);
-		ele.on('mouseenter',_nf_mouse_enterdot);
 	}else if(value == 'text'){
 		ele = draw.plain(node.getStatus('text')).fill(Style.nodeTextColor).font({size:Style.nodeTextSize,anchor:'middle'});
 		ele.insertAfter(drawAnchor5)
 		ele.on('mouseenter',_nf_mouse_entertext);
 		ele.on('mouseleave',_nf_mouse_leavetext);
-		ele.on('click',_nf_mouse_click);
+		ele.on('click',_nf_mouse_clicktext);
 	}else if(value == 'none'){
 		ele = draw.circle(1).fill('#fff');
 		ele.hide();
@@ -194,6 +196,9 @@ function _nf_statusupdate_onedit(node, prevValue,value){
 
 function _nf_statusupdate_onfocus(node, prevValue,value,callback){
 	if(value){
+		if(Nodes.nFocus  && Nodes.nFocus.nid != node.nid){
+			Nodes.nFocus.setStatus('onFocus',false);
+		}
 		Nodes.nFocus = node;
 		node.moveTo({pos:centerPoint, callback: moveCallback})
 	}
@@ -227,10 +232,9 @@ function _nf_statusupdate_position(node, prevValue,value) {
 		node.setStatus('stableCount',stableCount);
 		// return;
 	}
-
+	node.ele && node.ele.center(value.x, value.y)
 	//sync pos
 	if(posDiff > 0){
-		node.ele && node.ele.center(value.x, value.y)
 		if(node.getStatus('movement') != 'float'){
 			Physic.setPosition(node.phyObj, {x:value.x,y:value.y});
 		}
@@ -240,7 +244,7 @@ function _nf_statusupdate_position(node, prevValue,value) {
 	}
 
 	//update link
-	if(posDiff > 0.25){
+	if(posDiff > 0.1){
 		_nf_link_refreshall.call(node);
 	}
 }
@@ -288,7 +292,7 @@ function _nf_link_refresh(params){
 		}
 	}
 	
-	_nf_physic_refreshconstraint.call(this, nextNode, link);
+	// _nf_physic_refreshconstraint.call(this, nextNode, link);
 }
 
 function _nf_link_get(nextNid){
@@ -339,7 +343,7 @@ function _nf_physic_initbody(params){
 
 function _nf_physic_refreshconstraint(toNode, link){
 	if(!link.constraint){
-		l = 80 - link.w * 5 + Math.random() * 20;
+		l = 100;
 		constraint = Physic.addConstraint(this.phyObj, toNode.phyObj, {length: l});
 		constraint.at = this.nid;
 		constraint.to = toNode.nid;
@@ -349,6 +353,10 @@ function _nf_physic_refreshconstraint(toNode, link){
 
 //--------------------------------------mouse----------------------------------------------
 function _nf_mouse_enterdot(e){
+
+}
+
+function _nf_mouse_entershape(e){
 	var node = Nodes.getNodeByNid(this.attr('nid'));
 	if(!node.getStatus('movement') != 'animate' && node.getStatus('displayType') == 'dot'){
 		node.setStatus('onHover',true);
@@ -366,6 +374,6 @@ function _nf_mouse_leavetext(e){
 	}
 }
 
-function _nf_mouse_click(){
+function _nf_mouse_clicktext(){
 	Nodes.handleNodeNext('node',this.attr('nid'))
 }

@@ -39,14 +39,8 @@ function Node(params){
 	this.addStatus('onEdit',{value:false, updateHandler:_nf_statusupdate_onedit});
 	this.addStatus('opacity',{value:1, updateHandler:_nf_statusupdate_opacity});
 
-	// this.isLinked = _node_isLinked;
 	// this.updatePrevLink = _node_updatePrevLink;
-
-	// this.moveClose = _node_moveClose;
-	// this.adjustDisplayToFocus = _node_adjustDisplayToFocus;
-
 	// this.remove = _node_remove;
-	// this.matchText = _node_matchText;
 	// this.updateDisplayByScope = _node_updateDisplayByScope;
 	// this.removeLinkOfNode = _node_removeLinkOfNode;
 }
@@ -55,6 +49,7 @@ function _nf_shape_init(params){
 	this.shape = draw.circle(Style.nodeShapeRadius).opacity(0).center(params.x, params.y);
 	this.shape.insertBefore(drawAnchor1)
 	this.shape.attr('nid',this.nid);
+	this.shape.on('mouseenter',_nf_mouse_entershape);
 }
 
 function _nf_status_add(name, params){
@@ -114,30 +109,29 @@ function _node_getStatusKey(name, value){
 }
 
 function _node_onFrame(i) {
-
 	// if(this.deleting){
 	// 	return;
 	// }
-	//update pos
-	// var x = this.shape.cx();
-	// var y = this.shape.cy();
 	var movementStatus = this.getStatus('movement')	
 	if(movementStatus == 'float'){
-		if(!this.getStatus('onHover') && this.getStatus('stable') && i % 25 == 0 && Math.random() > 0.9){
-			var force = 0.1;
+		if(!this.getStatus('onHover') && !this.getStatus('stable') && i % 25 == 0 && Math.random() > 0.5){
+			var force = 0.5;
 			var fx = force * (Math.random() - 0.5);
 			var fy = force * (Math.random() - 0.5);
 			Physic.applyForce(this.phyObj,{x:fx,y:fy})
 		}
 		x = this.phyObj.position.x;
 		y = this.phyObj.position.y;
+
 		var pos = this.getStatus('position');
 		if(isNaN(x) || isNaN(y)){
 			Physic.setPosition(this.phyObj, {x:pos.x,y:pos.y});
 		}
 		else{
 			var diff = Math.abs(x - pos.x) + Math.abs(y - pos.y);
-			if(diff > 0.05){
+
+			if(diff > 0.01){
+				console.log(i)
 				this.setStatus('position',{x:x,y:y})
 			}
 		}
