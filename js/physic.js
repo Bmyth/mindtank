@@ -44,8 +44,7 @@ function _phy_addCircle(params){
 function _phy_addConstraint(obj1, obj2, params){
 	params = params || {}
 	stiffness = params.stiffness || 0.005;
-	stiffness = 1;
-	length = params.length || 50;
+	length = params.length || 100;
 	var constraint = this.Constraint.create({ 
 		bodyA: obj1,
         bodyB: obj2,

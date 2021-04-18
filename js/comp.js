@@ -53,14 +53,14 @@ function _ring_show(pos) {
 	
 	this.smallDisk.on('click',_ring_clickSmallRing);
 	this.bigDisk.on('click',_ring_clickBigRing);
-	this.phyObj =  Physic.addCircle({
-		x: pos.x,
-		y: pos.y,
-		r: this.outerRadius,
-		isStatic: true,
-		frictionAir: 0.02,
-		mass: 200
-	});
+	// this.phyObj =  Physic.addCircle({
+	// 	x: pos.x,
+	// 	y: pos.y,
+	// 	r: this.outerRadius,
+	// 	isStatic: true,
+	// 	frictionAir: 0.02,
+	// 	mass: 200
+	// });
 }
 
 function _ring_hide() {
@@ -68,7 +68,7 @@ function _ring_hide() {
 	this.smallDisk = null;
 	this.bigDisk.remove();
 	this.bigDisk = null;
-	Physic.deleteObject(this.phyObj);
+	// Physic.deleteObject(this.phyObj);
 }
 
 function _ring_moveTo(pos) {
@@ -78,7 +78,7 @@ function _ring_moveTo(pos) {
 	this.bigDisk.animate({
 	  duration: 400
 	}).center(pos.x, pos.y);
-	Physic.setPosition(this.phyObj, {x:pos.x,y:pos.y});
+	// Physic.setPosition(this.phyObj, {x:pos.x,y:pos.y});
 }
 
 function _ring_clickSmallRing(e){

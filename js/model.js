@@ -58,7 +58,9 @@ function _model_syncLinks(node){
 
 	node.prev.forEach(function(t){
 		var n = _model_getNodeById(t.id);
+
 		if(n){
+			console.log(JSON.stringify(n.next))
 			var l = n.next.find(function(p){
 				return p.id == node.id
 			})
@@ -147,8 +149,8 @@ function _model_deleteNode(id){
 }
 
 function _model_mergeNode(id1, id2){
-	var node1 = _model_getNodeById(id1) || Nodes.getNodeData(id1);
-	var node2 = _model_getNodeById(id2) || Nodes.getNodeData(id1);
+	var node1 = _model_getNodeById(id1);
+	var node2 = id2 ? _model_getNodeById(id2) : Nodes.getNodeByNid(id2).getModel();
 	node2.next.forEach(function(ne){
 		var n = _model_getNodeById(ne.id);
 		var p1 = _.find(n.prev, function(pr){
@@ -222,6 +224,7 @@ function _model_mergeNode(id1, id2){
 			pr1.w = p.w
 		}
 	})
+
 	Model.nodes = _.filter(Model.nodes, function(n){
 		return n.id != id2
 	})

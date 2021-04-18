@@ -1,53 +1,4 @@
-//--------------------------------------action----------------------------------------------
-function _nf_action_matching(node){
-	if(node.nid == this.nid){
-		return;
-	}
-	var _this = this;
-	var nodeText = node.getStatus('text'); 
-	var text = this.getStatus('text');
-	var equal = nodeText == text;
-	var matched = equal || (nodeText.length < 2 ? false : (text.indexOf(nodeText) >= 0));
-	var pos = node.getStatus('position');
-	if(matched && !equal){
-		this.moveToArc({relatePoint: pos, radius:Comp.ring.outerRadius, radiusOffRange:[50, 100], degreeOffRange:[-10, 10], callback: matchCallback})
-	}
-	else if(equal){
-		this.moveTo({pos: pos, callback:equalCallback})
-	}
-	else if(node.getStatus('onFocus') && this.isLinked(node.nid)){
-		var d = Comp.ring.outerRadius - Comp.ring.innerRadius;
-		this.moveToArc({relatePoint: pos, radius:Comp.ring.outerRadius, radiusOffRange:[-d, -20], degreeOffRange:[-60, 60], callback: linkCallback})
-	}
-	else if(!matched){
-		if(Comp.ring.inOuterRange(this.getStatus('position'))){
-			this.moveToArc({center:pos, relatePoint:this.getStatus('position'), radius: Comp.ring.outerRadius, radiusOffRange:[50, 150], degreeOffRange:[-10, 10], callback: notmatchCallback})
-		}else{
-			notmatchCallback(this);
-		}
-	}
-
-	function equalCallback(node){
-		node.setStatus('opacity',0);
-		node.setStatus('movement','static');
-	}
-
-	function linkCallback(node){
-		node.setStatus('displayType','text');
-		node.setStatus('movement','static');
-	}
-
-	function matchCallback(node){
-		node.setStatus('displayType','text');
-		node.setStatus('movement','float');
-	}
-
-	function notmatchCallback(node){
-		node.setStatus('displayType',VReset);
-		node.setStatus('movement','float');
-	}
-}
-
+//--------------------------------------move----------------------------------------------
 function _nf_action_moveto(params){
 	var pos = params.pos;
 	var duration = params.duration || 400;
@@ -58,7 +9,7 @@ function _nf_action_moveto(params){
 	}).center(pos.x, pos.y);
 	runner.after(function(e){
 		node.setStatus('position', pos);
-		node.setStatus('movement',VReset);
+		node.resetStatus('movement');
 		params.callback && params.callback(node);
 	})
 }
@@ -88,32 +39,20 @@ function _nf_action_movetoarc(params){
 }
 
 //--------------------------------------status----------------------------------------------
-function _nf_statusreset_displaytype(node){
-	if(node.getStatus('onFocus')){
-		return 'text';
-	}
-	else if(Nodes.nFocus && node.isLinked(Nodes.nFocus.nid)){
-		return 'text';
-	}else{
-		return 'dot';
-	}
-}
-
 function _nf_statusreset_linknexts(node){
+	if(!node.nid){
+		return [];
+	}
 	var n = Model.getNodeById(node.nid);
-	return n.next;
+	return n ? n.next : [];
 }
 
 function _nf_statusreset_linkprevs(node){
-	var n = Model.getNodeById(node.nid);
-	return n.prev;
-}
-
-function _nf_statusreset_movement(node){
-	if(Nodes.nFocus && Nodes.nFocus.nid == node.nid){
-		return 'static';
+	if(!node.nid){
+		return [];
 	}
-	return 'float';
+	var n = Model.getNodeById(node.nid);
+	return n ? n.prev : [];
 }
 
 function _nf_statusreset_text(node){
@@ -147,10 +86,25 @@ function _nf_statusupdate_linknexts(node, prevValue,value) {
 		var nextNode = Nodes.getNodeByNid(nextLinkData.id);
 		_nf_link_refresh.call(_this, {data:nextLinkData, nextNode:nextNode})
 	})
+	var diff = _nf_link_diff(prevValue,value,'1');
+	diff.forEach(function (d) {
+		_nf_link_remove(d.id);
+		var nextNode = Nodes.getNodeByNid(d.id);
+		nextNode && nextNode.setStatus('linkPrevs',VReset);
+	})
+	diff = _nf_link_diff(prevValue,value,'2');
+	diff.forEach(function (d) {
+		var nextNode = Nodes.getNodeByNid(d.id);
+		nextNode && nextNode.setStatus('linkPrevs',VReset);
+	})
 }
 
 function _nf_statusupdate_linkprevs(node, prevValue,value) {
-
+	var diff = _nf_link_diff(prevValue,value,'all');
+	diff.forEach(function(d){
+		var prevNode = Nodes.getNodeByNid(d.id);
+		prevNode && prevNode.setStatus('linkNexts',VReset);
+ 	})
 }
 
 function _nf_statusupdate_movement(node, prevValue,value) {
@@ -167,12 +121,12 @@ function _nf_statusupdate_movement(node, prevValue,value) {
 
 function _nf_statusupdate_onhover(node, prevValue,value){
 	if(value){
-		Nodes.nHover = this;
+		Nodes.nHover = node;
 		if(node.getStatus('displayType') == 'dot'){
 			node.setStatus('displayType','text');
 		}
 	}else{
-		node.setStatus('displayType',VReset);
+		node.resetStatus('displayType');
 		// node.setStatus('movement',VReset);
 		Nodes.nHover = null;
 	}
@@ -184,57 +138,46 @@ function _nf_statusupdate_onedit(node, prevValue,value){
 			Nodes.nEdit.setStatus('onEdit',false);
 		}
 		Nodes.nEdit = node;
-		Nodes.nEdit.setStatus('opacity',0);
 		Entry.show();
 	}else{
 		Nodes.nEdit = null;
-		node.setStatus('displayType',VReset);
-		node.setStatus('opacity',1);
 		Entry.hide();
 	}
+	Nodes.items.forEach(function(n){
+		n.resetStatus();
+	})
 }
 
-function _nf_statusupdate_onfocus(node, prevValue,value,callback){
+function _nf_statusupdate_onfocus(node, prevValue,value){
 	if(value){
 		if(Nodes.nFocus  && Nodes.nFocus.nid != node.nid){
 			Nodes.nFocus.setStatus('onFocus',false);
 		}
 		Nodes.nFocus = node;
-		node.moveTo({pos:centerPoint, callback: moveCallback})
+	}else{
+		Nodes.nFocus = null;
 	}
-
-	function moveCallback(node){
-		Comp.ring.show(centerPoint);
-		Nodes.items.forEach(function(n){
-			n.matching(node);
-		})
-		callback && callback(node);
-	}
+	Nodes.items.forEach(function(n){
+		n.resetStatus();
+	})
 }
 
 function _nf_statusupdate_opacity(node, prevValue,value){
-	node.ele && node.ele.opacity(value);
+	if(node.ele){
+		var pos = node.getStatus('position');
+		node.ele.center(pos.x, pos.y)
+		node.ele.opacity(value);
+	}
 }
 
 function _nf_statusupdate_position(node, prevValue,value) {
-	var posDiff = Math.abs(prevValue.x - value.x) + Math.abs(prevValue.y - value.y);
-	//show node after pos stable
-	var stableCount = node.getStatus('stableCount')
-	if(!node.getStatus('stable') && stableCount < 0){
-		if(posDiff < 0.1){
-			stableCount += 1;
-			if(stableCount == 0){
-				node.setStatus('stable',true);
-			}
-		}else{
-			stableCount = -5;
-		}
-		node.setStatus('stableCount',stableCount);
-		// return;
-	}
-	node.ele && node.ele.center(value.x, value.y)
+	var posDiff = prevValue  == null ? 1 :  Math.abs(prevValue.x - value.x) + Math.abs(prevValue.y - value.y);
+	
 	//sync pos
 	if(posDiff > 0){
+		if(node.ele){
+			node.ele.center(value.x, value.y)
+		}
 		if(node.getStatus('movement') != 'float'){
 			Physic.setPosition(node.phyObj, {x:value.x,y:value.y});
 		}
@@ -249,27 +192,79 @@ function _nf_statusupdate_position(node, prevValue,value) {
 	}
 }
 
-function _nf_statusupdate_stable(node, prevValue,value) {
-	if(value){
-		node.setStatus('displayType','dot');
-		node.setStatus('movement','float');
-	}
-}
-
 function _nf_statusupdate_text(node, prevValue,value) {
 	if(node.getStatus('displayType') == 'text'){
 		node.ele.plain(value)
 	}
 	if(node.getStatus('onEdit')){
 		Nodes.items.forEach(function(n){
-			if(n.nid != node.nid){
-				n.matching(node);
-			}
+			n.resetStatus();
 		})
 	}
 }
 
 //--------------------------------------link----------------------------------------------
+function _nf_link_add(node){
+	var _this = this; 	
+	var linkNexts = this.getStatus('linkNexts');
+	var linkNext = _.find(linkNexts, function(l){
+		return l.id == node.nid;
+	})
+	if(!linkNext){
+		linkNext = {
+			id : node.nid || '',
+			w : 1
+		}
+		linkNexts.push(linkNext);
+		this.setStatus('linkNexts', linkNexts);
+	}else{
+		linkNext.w += 1;
+	}
+	var linkPrevs = node.getStatus('linkPrevs');
+	var linkPrev = _.find(linkPrevs, function(l){
+		return l.id == _this.nid;
+	})
+	if(!linkPrev){
+		linkPrev = {
+			id : _this.nid || '',
+			w : 1
+		}
+		linkPrevs.push(linkPrev);
+		node.setStatus('linkPrevs', linkPrevs);
+	}else{
+		linkPrev.w += 1;
+	}
+	this.refreshLink({nextNode:node});
+}
+
+function _nf_link_remove(nid){
+	var link = _.find(this.links, function(l){
+		return l.nextNode.nid == nid;
+	});
+	if(link){
+		link.line.remove();
+		var nextNode = link.nextNode;
+		if(link.constraint){
+			Physic.deleteObject(link.constraint);
+		}
+		this.links = _.filter(this.links, function(l){
+			return l.nextNode.nid == nid
+		})
+
+		var linkNexts = _.filter(this.getStatus('linkNexts'), function(l){
+			return l.id != nid;
+		})
+		this.setStatus('linkNexts', linkNexts);
+
+		var linkPrevs = _.filter(nextNode.getStatus('linkPrevs'), function(l){
+			return l.id != nid;
+		})
+		nextNode.setStatus('linkPrevs', linkPrevs);
+		//save
+	}
+}
+
+
 function _nf_link_refresh(params){
 	params = params || {};
 	var nextNode = params.nextNode;
@@ -292,7 +287,7 @@ function _nf_link_refresh(params){
 		}
 	}
 	
-	// _nf_physic_refreshconstraint.call(this, nextNode, link);
+	_nf_physic_refreshconstraint.call(this, nextNode, link);
 }
 
 function _nf_link_get(nextNid){
@@ -330,17 +325,6 @@ function _nf_link_refreshall(){
 }
 
 //--------------------------------------physic----------------------------------------------
-function _nf_physic_initbody(params){
-	this.phyObj = Physic.addCircle({
-		x: params.x,
-		y: params.y,
-		r: Style.nodeShapeRadius,
-		isStatic: false,
-		frictionAir: 0.5,
-		mass: 20
-	});
-}
-
 function _nf_physic_refreshconstraint(toNode, link){
 	if(!link.constraint){
 		l = 100;
@@ -376,4 +360,46 @@ function _nf_mouse_leavetext(e){
 
 function _nf_mouse_clicktext(){
 	Nodes.handleNodeNext('node',this.attr('nid'))
+}
+
+//--------------------------------------miscellaneous----------------------------------------------
+function _nf_init_shape_and_phyobj(params){
+	this.shape = draw.circle(Style.nodeShapeRadius).opacity(0).center(params.x, params.y);
+	this.shape.insertBefore(drawAnchor1)
+	this.shape.attr('nid',this.nid);
+	this.shape.on('mouseenter',_nf_mouse_entershape);
+
+	this.phyObj = Physic.addCircle({
+		x: params.x,
+		y: params.y,
+		r: Style.nodeShapeRadius,
+		isStatic: false,
+		frictionAir: 0.4,
+		mass: 20
+	});
+}
+
+function _nf_link_diff(list1,list2,type) {
+	var diff = [];
+	if(type == '1' || type == 'all'){
+		list1.forEach(function(i) {
+			var exist = _.find(list2, function(j) {
+				return i.id == j.id
+			})
+			if(!exist){
+				diff.push(i)
+			}
+		})
+	}
+	if(type == '2' || type == 'all'){
+		list2.forEach(function(i) {
+			var exist = _.find(list1, function(j) {
+				return i.id == j.id
+			})
+			if(!exist){
+				diff.push(i)
+			}
+		})
+	}
+	return diff;
 }

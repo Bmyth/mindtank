@@ -35,7 +35,6 @@ function _entry_Keyup(e){
     }
     //delete
     else if(key == '46' || key == '8'){
-        console.log('de')
         _entry_delete();
     }
     // left
@@ -75,15 +74,48 @@ function _entry_compositionend(e) {
 }
 
 function _entry_enter() {
-    Nodes.handleKeyEnter();
+    if(!Nodes.nEdit){
+        //open temp
+        return;
+    }
+    var text = Entry.pureVal();
+    if(text == ''){
+        //delete node
+        return;
+    }
+    var matched = Model.getNodeByText(text);
+    if(!matched && !Nodes.nEdit.nid){
+        var nid = Model.addNode(Nodes.nEdit.getModel());
+        Nodes.nEdit.setNid(nid); 
+        Nodes.nTemp = null; 
+    }else if(!matched && Nodes.nEdit.nid){
+        Model.updateText(Nodes.nEdit.nid, text);
+    }else{
+        Nodes.nEdit.merge(matched.id);
+    }
+    Nodes.nEdit.setStatus('onEdit',false);
 }
 
 function _entry_delete() {
-    Nodes.handleKeyDelete();
+    Nodes.nHover && Nodes.nHover.remove();   
 }
 
 function _entry_esc() {
-    Nodes.handleKeyEsc();
+    if(Nodes.nEdit){
+        Nodes.nEdit.setStatus('text',VReset);
+        Nodes.nEdit.setStatus('onEdit',false);
+        if(Nodes.nTemp){
+            Nodes.nTemp.remove();
+        }
+    }
+    else{
+        if(Nodes.nFocus){
+            Nodes.nFocus.setStatus('onFocus',false);
+        }
+        if(Nodes.nTemp){
+            Nodes.nTemp.remove();
+        }
+    }
 }
 
 function _entry_click(e) {
