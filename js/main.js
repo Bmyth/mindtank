@@ -4,7 +4,7 @@ var Comp = {};
 var drawAnchor1, drawAnchor2, drawAnchor3, drawAnchor4, drawAnchor5;
 var VReset = '%reset';
 var Style =  {
-    nodeShapeRadius : 10,
+    nodeShapeRadius : 0.1,
     nodeDotColor : '#aaa',
     nodeTextColor : '#666',
     nodeTextHoverColor : '#333',

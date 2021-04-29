@@ -287,7 +287,7 @@ function _nf_link_refresh(params){
 		}
 	}
 	
-	_nf_physic_refreshconstraint.call(this, nextNode, link);
+	// _nf_physic_refreshconstraint.call(this, nextNode, link);
 }
 
 function _nf_link_get(nextNid){

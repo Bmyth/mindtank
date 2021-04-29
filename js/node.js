@@ -102,6 +102,9 @@ function _node_getStatusKey(name, value){
 }
 
 function _node_resetStatus(status){
+	if(this.getStatus('movement') == 'animate'){
+		return;
+	}
 	var _this = this;
 	var sOpacity = 1, sDisplayType = 'dot', sMovement = 'float', sPosition = null;
 	if(Nodes.nEdit && Nodes.nEdit.nid != this.nid){
@@ -133,6 +136,7 @@ function _node_resetStatus(status){
 	}
 
 	var setStatus = function (node) {
+		console.log(node.getStatus('position'))
 		if(!status || status == 'opacity'){
 			node.setStatus('opacity',sOpacity);
 		}
@@ -145,6 +149,8 @@ function _node_resetStatus(status){
 	}
 
 	if((!status || status == 'position') && sPosition){
+		console.log(this.nid)
+		console.log(sPosition.x,sPosition.y)
 		this.moveTo({pos:sPosition, callback:setStatus})
 	}else{
 		setStatus(this)
