@@ -4,6 +4,7 @@ var Physic ={
 	addConstraint: _phy_addConstraint,
 	setStatic: _phy_setStatic,
 	setPosition: _phy_setPosition,
+	setMask: _phy_setMask,
 	deleteObject: _phy_deleteObject,
 	applyForce: _phy_applyForce
 }
@@ -36,6 +37,9 @@ function _phy_init(){
 }
 
 function _phy_addCircle(params){
+	params.collisionFilter = {
+        category: PhysicFilter.node
+    }
 	var circle = this.Bodies.circle(params.x, params.y, params.r, params);
 	this.World.add(this.world, [circle]);
 	return circle;
@@ -61,6 +65,10 @@ function _phy_setStatic(obj, isStatic) {
 
 function _phy_setPosition(obj, position) {
 	this.Body.setPosition(obj, position);
+}
+
+function _phy_setMask(obj, mask) {
+	obj.collisionFilter.mask = mask;
 }
 
 function _phy_deleteObject(o){

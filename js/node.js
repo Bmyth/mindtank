@@ -43,6 +43,7 @@ function Node(params){
 	this.addStatus('onFocus',{value:false, updateHandler:_nf_statusupdate_onfocus});
 	this.addStatus('onEdit',{value:false, updateHandler:_nf_statusupdate_onedit});
 	this.addStatus('opacity',{value:1, updateHandler:_nf_statusupdate_opacity});
+	this.addStatus('phyMask',{value:PhysicFilter.default | PhysicFilter.node, updateHandler:_nf_statusupdate_phymask});
 }
 
 function _node_addStatus(name, params){
@@ -107,6 +108,7 @@ function _node_resetStatus(status){
 	}
 	var _this = this;
 	var sOpacity = 1, sDisplayType = 'dot', sMovement = 'float', sPosition = null;
+	var sPhyFilter = null;
 	if(Nodes.nEdit && Nodes.nEdit.nid != this.nid){
 		var editText = Nodes.nEdit.getStatus('text');
 		var text = this.getStatus('text');
@@ -115,6 +117,7 @@ function _node_resetStatus(status){
 		if(isEqual){
 			sPosition = Nodes.nEdit.getStatus('position');
 			sOpacity = 0;
+			sMovement = 'static';
 		}else if(isMatched){
 			sDisplayType = 'text';
 			sMovement = 'static';
@@ -136,7 +139,6 @@ function _node_resetStatus(status){
 	}
 
 	var setStatus = function (node) {
-		console.log(node.getStatus('position'))
 		if(!status || status == 'opacity'){
 			node.setStatus('opacity',sOpacity);
 		}
@@ -149,8 +151,6 @@ function _node_resetStatus(status){
 	}
 
 	if((!status || status == 'position') && sPosition){
-		console.log(this.nid)
-		console.log(sPosition.x,sPosition.y)
 		this.moveTo({pos:sPosition, callback:setStatus})
 	}else{
 		setStatus(this)

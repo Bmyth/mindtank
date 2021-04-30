@@ -6,6 +6,7 @@ var Nodes = {
 	nHover: null,
 	nTemp: null,
 	init: _nodes_init,
+	refresh: _nodes_refresh,
 	handleNodeNext: _nodes_nodeNext,
 	getNodeByNid: _nodes_getNodeByNid,
 	getTempNode: _nodes_getTempNode
@@ -25,22 +26,29 @@ function _nodes_init() {
     setInterval(_nodes_onFrame, 40)
 }
 
+function _nodes_refresh(){
+	Nodes.items.forEach(function(n){
+		n.resetStatus();
+	})
+}
+
 function _nodes_nodeNext(type, param){
 	if(type == 'point'){
 		Nodes.nTemp = Nodes.getTempNode(param);
-		if(Nodes.nEdit){
-			Nodes.nEdit.setStatus('onEdit',false);
-		}
 		if(Nodes.nFocus && Nodes.nFocus.nid){
 			Nodes.nFocus.addLink(Nodes.nTemp);
+		}else{
+			Nodes.nTemp.setStatus('onFocus',true);
 		}
-		Nodes.nTemp.setStatus('onFocus',true);
 		Nodes.nTemp.setStatus('onEdit',true);
 	}
 	if(type == 'node'){
 		var node = _nodes_getNodeByNid(param);
-		node.setStatus('onFocus',true);
-		node.setStatus('onEdit',true);
+		if(Nodes.nFocus && Nodes.nFocus.nid == node.nid){
+			node.setStatus('onEdit',true);
+		}else{
+			node.setStatus('onFocus',true);
+		}
 	}
 }
 

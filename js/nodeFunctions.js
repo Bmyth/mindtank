@@ -65,7 +65,8 @@ function _nf_statusupdate_displaytype(node, prevValue,value) {
 	if(value == 'dot'){
 		ele = draw.circle(5).fill(Style.nodeDotColor);
 	}else if(value == 'text'){
-		ele = draw.plain(node.getStatus('text')).fill(Style.nodeTextColor).font({size:Style.nodeTextSize,anchor:'middle'});
+		var size = node.getStatus('onFocus') ? Style.nodeTextSizeOnFocus : Style.nodeTextSize;
+		ele = draw.plain(node.getStatus('text')).fill(Style.nodeTextColor).font({size:size,anchor:'middle'});
 		ele.insertAfter(drawAnchor5)
 		ele.on('mouseenter',_nf_mouse_entertext);
 		ele.on('mouseleave',_nf_mouse_leavetext);
@@ -134,18 +135,20 @@ function _nf_statusupdate_onhover(node, prevValue,value){
 
 function _nf_statusupdate_onedit(node, prevValue,value){
 	if(value){
-		if(Nodes.nEdit  && Nodes.nEdit.nid != node.nid){
+		if(Nodes.nEdit && Nodes.nEdit.nid != node.nid){
 			Nodes.nEdit.setStatus('onEdit',false);
 		}
+		node.setStatus('opacity',0);
+		node.setStatus('phyMask',PhysicFilter.default)
 		Nodes.nEdit = node;
 		Entry.show();
 	}else{
+		node.setStatus('opacity',1);
+		node.setStatus('phyMask',PhysicFilter.default|PhysicFilter.node)
 		Nodes.nEdit = null;
 		Entry.hide();
 	}
-	Nodes.items.forEach(function(n){
-		n.resetStatus();
-	})
+	Nodes.refresh();
 }
 
 function _nf_statusupdate_onfocus(node, prevValue,value){
@@ -157,9 +160,8 @@ function _nf_statusupdate_onfocus(node, prevValue,value){
 	}else{
 		Nodes.nFocus = null;
 	}
-	Nodes.items.forEach(function(n){
-		n.resetStatus();
-	})
+	_nf_statusupdate_displaytype(node, '', node.getStatus('displayType'))
+	Nodes.refresh();
 }
 
 function _nf_statusupdate_opacity(node, prevValue,value){
@@ -167,6 +169,13 @@ function _nf_statusupdate_opacity(node, prevValue,value){
 		var pos = node.getStatus('position');
 		node.ele.center(pos.x, pos.y)
 		node.ele.opacity(value);
+	}
+}
+
+
+function _nf_statusupdate_phymask(node, prevValue, value){
+	if(value){
+		Physic.setMask(node.phyObj, value);
 	}
 }
 

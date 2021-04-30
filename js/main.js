@@ -4,12 +4,18 @@ var Comp = {};
 var drawAnchor1, drawAnchor2, drawAnchor3, drawAnchor4, drawAnchor5;
 var VReset = '%reset';
 var Style =  {
-    nodeShapeRadius : 0.1,
+    nodeShapeRadius : 8,
     nodeDotColor : '#aaa',
     nodeTextColor : '#666',
     nodeTextHoverColor : '#333',
     nodeLinkColor : '#666',
-    nodeTextSize : 12
+    nodeTextSize : 12,
+    nodeTextSizeOnFocus: 16
+}
+
+var PhysicFilter = {
+    default : 0x0001,
+    node : 0x0002
 }
 
 var nnn = 0
